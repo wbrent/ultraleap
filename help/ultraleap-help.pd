@@ -81,7 +81,7 @@
 #X text 62 359 start polling LEAP device;
 #X obj 11 441 cnv 16 106 32 empty empty empty 20 12 0 10 #e0e0e0 #404040 0;
 #X obj 19 449 ultraleap;
-#N canvas 702 63 1101 556 hand/finger-data 1;
+#N canvas 702 63 1101 615 hand/finger-data 1;
 #X obj 558 39 hand 1;
 #X obj 18 39 hand 0;
 #X restore 269 189 pd hand/finger-data;

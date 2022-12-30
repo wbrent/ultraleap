@@ -19,6 +19,10 @@ typedef struct _ultraleap
     t_float x_handTypeFlag;
     t_float x_handFingerCountFlag;
 
+    t_float x_armWristPositionFlag;
+    t_float x_armElbowPositionFlag;
+    t_float x_armWidthFlag;
+
     t_float x_palmDirectionFlag;
     t_float x_palmNormalFlag;
     t_float x_palmPositionFlag;
@@ -69,7 +73,7 @@ static void ultraleapPoll (t_ultraleap* x);
 
 // sub-routines to extract data from a Leap::Frame
 static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
-static void ultraleapProcessArm (t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
+static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
 static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fingerList);
 static void ultraleapProcessGeneral(t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
 

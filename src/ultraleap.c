@@ -25,11 +25,16 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
     result = LeapGetVersion (*(x->x_leapConnection), eLeapVersionPart_ClientLibrary, &leapVersion);
 
     x->x_handTypeFlag = 0.0;
+    x->x_handFingerCountFlag = 0.0;
+
+    x->x_armWristPositionFlag = 1.0;
+    x->x_armElbowPositionFlag = 1.0;
+    x->x_armWidthFlag = 1.0;
+
     x->x_palmDirectionFlag = 0.0;
     x->x_palmNormalFlag = 0.0;
     x->x_palmPositionFlag = 1.0;
     x->x_palmVelocityFlag = 0.0;
-    x->x_handFingerCountFlag = 0.0;
 
     x->x_fingerDirectionFlag = 0.0;
     x->x_fingerPositionFlag = 0.0;
@@ -286,6 +291,11 @@ static void ultraleapInfo (t_ultraleap* x)
 
     post ("hand_type: %1.0f", x->x_handTypeFlag);
     post ("finger_count: %1.0f\n", x->x_handFingerCountFlag);
+
+    post ("wrist_position: %1.0f", x->x_armWristPositionFlag);
+    post ("elbow_position: %1.0f", x->x_armElbowPositionFlag);
+    post ("arm_width: %1.0f\n", x->x_armWidthFlag);
+
     post ("palm_direction: %1.0f", x->x_palmDirectionFlag);
     post ("palm_normal: %1.0f", x->x_palmNormalFlag);
     post ("palm_position: %1.0f", x->x_palmPositionFlag);
@@ -316,7 +326,10 @@ static void ultraleapPoll (t_ultraleap* x)
         nHands = frame->nHands;
 
         if (nHands > 0)
+        {
+            ultraleapProcessArms (x, frame);
             ultraleapProcessHands (x, frame);
+        }
 
         if (x->x_generalFlag)
             ultraleapProcessGeneral (x, frame);
@@ -479,9 +492,52 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
 }
 
 // process arm per hand
-static void ultraleapProcessArm (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
+static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
 {
+    LEAP_HAND* handList = frame->pHands;
 
+    for (uint32_t handIdx = 0; handIdx < frame->nHands; handIdx++)
+    {
+        int numArmInfoAtoms = 6;
+        t_atom armInfo[numArmInfoAtoms];
+
+        // get this particular hand
+        LEAP_HAND hand = handList[handIdx];
+
+        // set first atom to handIdx since all output lists will begin with that
+        SETFLOAT (&armInfo[0], handIdx);
+
+        if (x->x_armWristPositionFlag)
+        {
+            SETSYMBOL (&armInfo[1], gensym ("arm"));
+            SETSYMBOL (&armInfo[2], gensym ("wrist_position"));
+            SETFLOAT (&armInfo[3], hand.arm.next_joint.x);
+            SETFLOAT (&armInfo[4], hand.arm.next_joint.y);
+            SETFLOAT (&armInfo[5], hand.arm.next_joint.z);
+
+            outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
+        }
+
+        if (x->x_armElbowPositionFlag)
+        {
+            SETSYMBOL (&armInfo[1], gensym ("arm"));
+            SETSYMBOL (&armInfo[2], gensym ("elbow_position"));
+            SETFLOAT (&armInfo[3], hand.arm.prev_joint.x);
+            SETFLOAT (&armInfo[4], hand.arm.prev_joint.y);
+            SETFLOAT (&armInfo[5], hand.arm.prev_joint.z);
+
+            outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
+        }
+
+        if (x->x_armWidthFlag)
+        {
+            SETSYMBOL (&armInfo[1], gensym ("arm"));
+            SETSYMBOL (&armInfo[2], gensym ("width"));
+            SETFLOAT (&armInfo[3], hand.arm.width);
+
+            outlet_list (x->x_outletHands, 0, numArmInfoAtoms - 2, armInfo);
+        }
+    }
 }
 
 // process fingers
