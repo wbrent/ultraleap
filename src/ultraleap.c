@@ -24,24 +24,33 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
     LeapC_SetTrackingMode (eLeapTrackingMode_Desktop);
     result = LeapGetVersion (*(x->x_leapConnection), eLeapVersionPart_ClientLibrary, &leapVersion);
 
+    x->x_generalFlag = 1.0;
+
     x->x_handTypeFlag = 0.0;
     x->x_handFingerCountFlag = 0.0;
+    x->x_handTimeVisibleFlag = 0.0;
+    x->x_handGrabStrengthFlag = 0.0;
+    x->x_handGrabAngleFlag = 0.0;
+    x->x_handPinchStrengthFlag = 0.0;
+    x->x_handPinchDistanceFlag = 0.0;
 
-    x->x_armWristPositionFlag = 1.0;
-    x->x_armElbowPositionFlag = 1.0;
-    x->x_armWidthFlag = 1.0;
+    x->x_armWristPositionFlag = 0.0;
+    x->x_armElbowPositionFlag = 0.0;
+    x->x_armWidthFlag = 0.0;
 
     x->x_palmDirectionFlag = 0.0;
     x->x_palmNormalFlag = 0.0;
     x->x_palmPositionFlag = 1.0;
+    x->x_palmStabilizedPositionFlag = 0.0;
     x->x_palmVelocityFlag = 0.0;
+    x->x_palmWidthFlag = 0.0;
 
+    x->x_fingerTypeFlag = 0.0;
     x->x_fingerDirectionFlag = 0.0;
     x->x_fingerPositionFlag = 0.0;
     x->x_fingerVelocityFlag = 0.0;
     x->x_fingerSizeFlag = 0.0;
-
-    x->x_generalFlag = 1.0;
+    x->x_fingerIsExtendedFlag = 0.0;
 
     post ("\n****************");
     post ("[ultraleap] version %s", PD_ULTRALEAP_VERSION);
@@ -118,6 +127,71 @@ void ultraleap_setup (void)
         A_NULL
     );
 
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetHandTimeVisibleFlag,
+        gensym ("time_visible"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetHandGrabStrengthFlag,
+        gensym ("grab_strength"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetHandGrabAngleFlag,
+        gensym ("grab_angle"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetHandPinchStrengthFlag,
+        gensym ("pinch_strength"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetHandPinchDistanceFlag,
+        gensym ("pinch_distance"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    // arm
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetArmWristPositionFlag,
+        gensym ("wrist_position"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetArmElbowPositionFlag,
+        gensym ("elbow_position"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetArmWidthFlag,
+        gensym ("arm_width"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
     // palm
     class_addmethod (
         ultraleap_class,
@@ -145,13 +219,37 @@ void ultraleap_setup (void)
 
     class_addmethod (
         ultraleap_class,
+        (t_method) ultraleapSetPalmStabilizedPositionFlag,
+        gensym ("palm_stabilized_position"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
         (t_method) ultraleapSetPalmVelocityFlag,
         gensym ("palm_velocity"),
         A_DEFFLOAT,
         A_NULL
     );
 
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetPalmWidthFlag,
+        gensym ("palm_width"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
     // fingers
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetFingerTypeFlag,
+        gensym ("finger_type"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
     class_addmethod (
         ultraleap_class,
         (t_method) ultraleapSetFingerDirectionFlag,
@@ -183,6 +281,14 @@ void ultraleap_setup (void)
         A_DEFFLOAT,
         A_NULL
     );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetFingerIsExtendedFlag,
+        gensym ("finger_is_extended"),
+        A_DEFFLOAT,
+        A_NULL
+    );
 }
 
 
@@ -205,6 +311,80 @@ static void ultraleapSetHandTypeFlag (t_ultraleap* x, t_float state)
     x->x_handTypeFlag = state;
 }
 
+static void ultraleapSetHandFingerCountFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_handFingerCountFlag = state;
+}
+
+static void ultraleapSetHandTimeVisibleFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_handTimeVisibleFlag = state;
+}
+
+static void ultraleapSetHandGrabStrengthFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_handGrabStrengthFlag = state;
+}
+
+static void ultraleapSetHandGrabAngleFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_handGrabAngleFlag = state;
+}
+
+static void ultraleapSetHandPinchStrengthFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_handPinchStrengthFlag = state;
+}
+
+static void ultraleapSetHandPinchDistanceFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_handPinchDistanceFlag = state;
+}
+
+// set methods: arms
+static void ultraleapSetArmWristPositionFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_armWristPositionFlag = state;
+}
+
+static void ultraleapSetArmElbowPositionFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_armElbowPositionFlag = state;
+}
+
+static void ultraleapSetArmWidthFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_armWidthFlag = state;
+}
+
+// set methods: palms
 static void ultraleapSetPalmDirectionFlag (t_ultraleap* x, t_float state)
 {
     state = (state < 0.0) ? 0.0 : state;
@@ -229,6 +409,14 @@ static void ultraleapSetPalmPositionFlag (t_ultraleap* x, t_float state)
     x->x_palmPositionFlag = state;
 }
 
+static void ultraleapSetPalmStabilizedPositionFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_palmStabilizedPositionFlag = state;
+}
+
 static void ultraleapSetPalmVelocityFlag (t_ultraleap* x, t_float state)
 {
     state = (state < 0.0) ? 0.0 : state;
@@ -237,16 +425,23 @@ static void ultraleapSetPalmVelocityFlag (t_ultraleap* x, t_float state)
     x->x_palmVelocityFlag = state;
 }
 
-static void ultraleapSetHandFingerCountFlag (t_ultraleap* x, t_float state)
+static void ultraleapSetPalmWidthFlag (t_ultraleap* x, t_float state)
 {
     state = (state < 0.0) ? 0.0 : state;
     state = (state > 1.0) ? 1.0 : state;
 
-    x->x_handFingerCountFlag = state;
+    x->x_palmWidthFlag = state;
 }
 
-
 // set methods: fingers
+static void ultraleapSetFingerTypeFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_fingerTypeFlag = state;
+}
+
 static void ultraleapSetFingerDirectionFlag (t_ultraleap* x, t_float state)
 {
     state = (state < 0.0) ? 0.0 : state;
@@ -279,6 +474,14 @@ static void ultraleapSetFingerSizeFlag (t_ultraleap* x, t_float state)
     x->x_fingerSizeFlag = state;
 }
 
+static void ultraleapSetFingerIsExtendedFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_fingerIsExtendedFlag = state;
+}
+
 
 // info method
 static void ultraleapInfo (t_ultraleap* x)
@@ -290,7 +493,12 @@ static void ultraleapInfo (t_ultraleap* x)
     post ("general: %1.0f\n", x->x_generalFlag);
 
     post ("hand_type: %1.0f", x->x_handTypeFlag);
-    post ("finger_count: %1.0f\n", x->x_handFingerCountFlag);
+    post ("finger_count: %1.0f", x->x_handFingerCountFlag);
+    post ("time_visible: %1.0f", x->x_handTimeVisibleFlag);
+    post ("grab_strength: %1.0f", x->x_handGrabStrengthFlag);
+    post ("grab_angle: %1.0f", x->x_handGrabAngleFlag);
+    post ("pinch_strength: %1.0f", x->x_handPinchStrengthFlag);
+    post ("pinch_distance: %1.0f\n", x->x_handPinchDistanceFlag);
 
     post ("wrist_position: %1.0f", x->x_armWristPositionFlag);
     post ("elbow_position: %1.0f", x->x_armElbowPositionFlag);
@@ -299,12 +507,16 @@ static void ultraleapInfo (t_ultraleap* x)
     post ("palm_direction: %1.0f", x->x_palmDirectionFlag);
     post ("palm_normal: %1.0f", x->x_palmNormalFlag);
     post ("palm_position: %1.0f", x->x_palmPositionFlag);
-    post ("palm_velocity: %1.0f\n", x->x_palmVelocityFlag);
+    post ("palm_stabilized_position: %1.0f", x->x_palmStabilizedPositionFlag);
+    post ("palm_velocity: %1.0f", x->x_palmVelocityFlag);
+    post ("palm_width: %1.0f\n", x->x_palmWidthFlag);
 
+    post ("finger_type: %1.0f", x->x_fingerTypeFlag);
     post ("finger_direction: %1.0f", x->x_fingerDirectionFlag);
     post ("finger_position: %1.0f", x->x_fingerPositionFlag);
     post ("finger_velocity: %1.0f", x->x_fingerVelocityFlag);
-    post ("finger_size: %1.0f\n", x->x_fingerSizeFlag);
+    post ("finger_size: %1.0f", x->x_fingerSizeFlag);
+    post ("finger_is_extended: %1.0f\n", x->x_fingerIsExtendedFlag);
 
     if (deviceProps)
         post ("Using device: %s", deviceProps->serial);
@@ -389,37 +601,52 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
             outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
         }
 
-        // TODO: add hand_visible_time flag
-        SETSYMBOL (&handInfo[1], gensym ("visible_time"));
-        SETFLOAT (&handInfo[2], (t_float) (hand.visible_time / (t_float)1000000));
+        // time visible
+        if (x->x_handTimeVisibleFlag)
+        {
+            SETSYMBOL (&handInfo[1], gensym ("time_visible"));
+            SETFLOAT (&handInfo[2], (t_float) (hand.visible_time / (t_float)1000000));
 
-        outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
+            outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
+        }
 
-        // TODO: add hand_pinch_distance flag
-        SETSYMBOL (&handInfo[1], gensym ("pinch_distance"));
-        SETFLOAT (&handInfo[2], hand.pinch_distance);
-
-        outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
-
-        // TODO: what's the difference between _distance and _strength?
-        // strength is normalized 0..1, distance is a measurement in mm
-        SETSYMBOL (&handInfo[1], gensym ("pinch_strength"));
-        SETFLOAT (&handInfo[2], hand.pinch_strength);
-
-        outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
-
-        // TODO: add hand_grab_angle flag
-        SETSYMBOL (&handInfo[1], gensym ("grab_angle"));
-        SETFLOAT (&handInfo[2], hand.grab_angle);
-
-        outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
-
-        // TODO: what's the difference between grab_angle and grab_strength?
         // angle is a measure of the grab angle in radians. strength is normalized 0..1
-        SETSYMBOL (&handInfo[1], gensym ("grab_strength"));
-        SETFLOAT (&handInfo[2], hand.grab_strength);
+        // grab strength
+        if (x->x_handGrabStrengthFlag)
+        {
+            SETSYMBOL (&handInfo[1], gensym ("grab_strength"));
+            SETFLOAT (&handInfo[2], hand.grab_strength);
 
-        outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
+            outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
+        }
+
+        // grab angle
+        if (x->x_handGrabAngleFlag)
+        {
+            SETSYMBOL (&handInfo[1], gensym ("grab_angle"));
+            SETFLOAT (&handInfo[2], hand.grab_angle);
+
+            outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
+        }
+
+        // strength is normalized 0..1, distance is a measurement in mm
+        // time visible
+        if (x->x_handPinchStrengthFlag)
+        {
+            SETSYMBOL (&handInfo[1], gensym ("pinch_strength"));
+            SETFLOAT (&handInfo[2], hand.pinch_strength);
+
+            outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
+        }
+
+        // pinch distance
+        if (x->x_handPinchDistanceFlag)
+        {
+            SETSYMBOL (&handInfo[1], gensym ("pinch_distance"));
+            SETFLOAT (&handInfo[2], hand.pinch_distance);
+
+            outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 3, handInfo);
+        }
 
         // PALM
         // direction
@@ -458,6 +685,19 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
             outlet_list (x->x_outletHands, 0, numHandInfoAtoms, handInfo);
         }
 
+        // TODO: why is this vector always (0, 0, 0)? is it necessary to do some configuration for .stabilized_position to be set by LEAP_PALM?
+        // palm stabilized position
+        if (x->x_palmStabilizedPositionFlag)
+        {
+            SETSYMBOL (&handInfo[1], gensym ("palm"));
+            SETSYMBOL (&handInfo[2], gensym ("stabilized_position"));
+            SETFLOAT (&handInfo[3], hand.palm.stabilized_position.x);
+            SETFLOAT (&handInfo[4], hand.palm.stabilized_position.y);
+            SETFLOAT (&handInfo[5], hand.palm.stabilized_position.z);
+
+            outlet_list (x->x_outletHands, 0, numHandInfoAtoms, handInfo);
+        }
+
         // palm velocity
         if (x->x_palmVelocityFlag)
         {
@@ -470,21 +710,15 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
             outlet_list (x->x_outletHands, 0, numHandInfoAtoms, handInfo);
         }
 
-        // TODO: add hand_palm_width flag
-        SETSYMBOL (&handInfo[1], gensym ("palm"));
-        SETSYMBOL (&handInfo[2], gensym ("width"));
-        SETFLOAT (&handInfo[3], hand.palm.width);
+        // palm width
+        if (x->x_palmWidthFlag)
+        {
+            SETSYMBOL (&handInfo[1], gensym ("palm"));
+            SETSYMBOL (&handInfo[2], gensym ("width"));
+            SETFLOAT (&handInfo[3], hand.palm.width);
 
-        outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 2, handInfo);
-
-        // TODO: add hand_palm_stabilized_position flag
-        SETSYMBOL (&handInfo[1], gensym ("palm"));
-        SETSYMBOL (&handInfo[2], gensym ("stabilized_position"));
-        SETFLOAT (&handInfo[3], hand.palm.stabilized_position.x);
-        SETFLOAT (&handInfo[4], hand.palm.stabilized_position.y);
-        SETFLOAT (&handInfo[5], hand.palm.stabilized_position.z);
-
-        outlet_list (x->x_outletHands, 0, numHandInfoAtoms, handInfo);
+            outlet_list (x->x_outletHands, 0, numHandInfoAtoms - 2, handInfo);
+        }
 
         // process fingers per hand
         ultraleapProcessFingers (x, handIdx, fingerList);
@@ -551,7 +785,38 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
 
         SETFLOAT (&fingerInfo[0], handIdx);
 
-        // TODO: is the finger_id the same as the type? (i.e., 0 = thumb, 4 = pinky)
+        // type
+        if (x->x_fingerTypeFlag)
+        {
+            SETSYMBOL (&fingerInfo[1], gensym ("finger"));
+            // finger_id seems to be consistent, where thumb = 0, index = 1, middle = 2, ring = 3, and pinky = 4
+            SETFLOAT (&fingerInfo[2], finger.finger_id);
+            SETSYMBOL (&fingerInfo[3], gensym ("type"));
+
+            switch (finger.finger_id)
+            {
+                case 0:
+                    SETSYMBOL (&fingerInfo[4], gensym ("thumb"));
+                    break;
+                case 1:
+                    SETSYMBOL (&fingerInfo[4], gensym ("index"));
+                    break;
+                case 2:
+                    SETSYMBOL (&fingerInfo[4], gensym ("middle"));
+                    break;
+                case 3:
+                    SETSYMBOL (&fingerInfo[4], gensym ("ring"));
+                    break;
+                case 4:
+                    SETSYMBOL (&fingerInfo[4], gensym ("pinky"));
+                    break;
+                default:
+                    SETSYMBOL (&fingerInfo[4], gensym ("invalid"));
+                    break;
+            }
+
+            outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 2, fingerInfo);
+        }
 
         // TODO: how do we get the direction of a finger or bone? see the Cxx solution
         /*
@@ -598,27 +863,34 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
 
             outlet_anything (x->x_outletHands, gensym ("hand"), numFingerInfoAtoms, fingerInfo);
         }
-
-        // TODO: how do we get the width/length of a finger or bone? see the Cxx solution
+*/
+        // TODO: how do we get the length of a finger? see the Cxx solution
+        // size
         if (x->x_fingerSizeFlag)
         {
+            LEAP_BONE distalBone = finger.distal;
+
             SETFLOAT (&fingerInfo[0], handIdx);
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
-            SETFLOAT (&fingerInfo[2], finger.type());
+            SETFLOAT (&fingerInfo[2], finger.finger_id);
             SETSYMBOL (&fingerInfo[3], gensym ("size"));
-            SETFLOAT (&fingerInfo[4], finger.width());
-            SETFLOAT (&fingerInfo[5], finger.length());
+            SETFLOAT (&fingerInfo[4], distalBone.width);
+            // SETFLOAT (&fingerInfo[5], distalBone.length());
 
-            outlet_anything (x->x_outletHands, gensym ("hand"), numFingerInfoAtoms - 1, fingerInfo);
+            outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 2, fingerInfo);
         }
-*/
-        // TODO: add is_extended flag
-        SETSYMBOL (&fingerInfo[1], gensym ("finger"));
-        // finger_id seems to be consistent, where thumb = 0, index = 1, middle = 2, ring = 3, and pinky = 4
-        SETFLOAT (&fingerInfo[2], finger.finger_id);
-        SETSYMBOL (&fingerInfo[3], gensym ("is_extended"));
-        SETFLOAT (&fingerInfo[4], finger.is_extended);
-        outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 2, fingerInfo);
+
+        // is extended
+        if (x->x_fingerIsExtendedFlag)
+        {
+            SETSYMBOL (&fingerInfo[1], gensym ("finger"));
+            // finger_id seems to be consistent, where thumb = 0, index = 1, middle = 2, ring = 3, and pinky = 4
+            SETFLOAT (&fingerInfo[2], finger.finger_id);
+            SETSYMBOL (&fingerInfo[3], gensym ("is_extended"));
+            SETFLOAT (&fingerInfo[4], finger.is_extended);
+
+            outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 2, fingerInfo);
+        }
     }
 }
 

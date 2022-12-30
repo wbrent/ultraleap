@@ -16,8 +16,15 @@ typedef struct _ultraleap
     int64_t x_lastFrameID;
     LEAP_CONNECTION* x_leapConnection;
 
+    t_float x_generalFlag;
+
     t_float x_handTypeFlag;
     t_float x_handFingerCountFlag;
+    t_float x_handTimeVisibleFlag;
+    t_float x_handGrabStrengthFlag;
+    t_float x_handGrabAngleFlag;
+    t_float x_handPinchStrengthFlag;
+    t_float x_handPinchDistanceFlag;
 
     t_float x_armWristPositionFlag;
     t_float x_armElbowPositionFlag;
@@ -26,15 +33,16 @@ typedef struct _ultraleap
     t_float x_palmDirectionFlag;
     t_float x_palmNormalFlag;
     t_float x_palmPositionFlag;
+    t_float x_palmStabilizedPositionFlag;
     t_float x_palmVelocityFlag;
+    t_float x_palmWidthFlag;
 
+    t_float x_fingerTypeFlag;
     t_float x_fingerDirectionFlag;
     t_float x_fingerPositionFlag;
     t_float x_fingerVelocityFlag;
     t_float x_fingerSizeFlag;
-    // TODO: add fingerIsExtendedFlag
-
-    t_float x_generalFlag;
+    t_float x_fingerIsExtendedFlag;
 
     t_outlet* x_outletGeneral;
     t_outlet* x_outletHands;
@@ -52,18 +60,32 @@ static void ultraleapSetGeneralFlag (t_ultraleap* x, t_float state);
 // set methods: hand
 static void ultraleapSetHandTypeFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetHandFingerCountFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetHandTimeVisibleFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetHandGrabStrengthFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetHandGrabAngleFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetHandPinchStrengthFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetHandPinchDistanceFlag (t_ultraleap* x, t_float state);
+
+// set methods: arm
+static void ultraleapSetArmWristPositionFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetArmElbowPositionFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetArmWidthFlag (t_ultraleap* x, t_float state);
 
 // set methods: palm
 static void ultraleapSetPalmDirectionFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetPalmNormalFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetPalmPositionFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetPalmStabilizedPositionFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetPalmVelocityFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetPalmWidthFlag (t_ultraleap* x, t_float state);
 
 // set methods: fingers
+static void ultraleapSetFingerTypeFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetFingerDirectionFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetFingerPositionFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetFingerVelocityFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetFingerSizeFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetFingerIsExtendedFlag (t_ultraleap* x, t_float state);
 
 // post object info
 static void ultraleapInfo (t_ultraleap* x);
