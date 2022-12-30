@@ -13,15 +13,15 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
     x->x_objSymbol = s;
 
     // set up callback Functions
-    ConnectionCallbacks.on_connection = &ultraleap_onConnect;
-    ConnectionCallbacks.on_device_found = &ultraleap_onDevice;
-    ConnectionCallbacks.on_tracking_mode = &ultraleap_onTrackingMode;
+    LeapC_ConnectionCallbacks.on_connection = &ultraleap_onConnect;
+    LeapC_ConnectionCallbacks.on_device_found = &ultraleap_onDevice;
+    LeapC_ConnectionCallbacks.on_tracking_mode = &ultraleap_onTrackingMode;
 
     // initialize the last frame ID
     x->x_lastFrameID = 0;
     // open a connection and keep a handle for it
-    x->x_leapConnection = OpenConnection();
-    SetTrackingMode (eLeapTrackingMode_Desktop);
+    x->x_leapConnection = LeapC_OpenConnection();
+    LeapC_SetTrackingMode (eLeapTrackingMode_Desktop);
     result = LeapGetVersion (*(x->x_leapConnection), eLeapVersionPart_ClientLibrary, &leapVersion);
 
     x->x_handTypeFlag = 0.0;
@@ -52,7 +52,7 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 static void ultraleap_free (t_ultraleap* x)
 {
     // just calling CloseConnection() seems to work without any issues. is that all the cleanup that's required?
-    CloseConnection();
+    LeapC_CloseConnection();
 }
 
 // object initialization
@@ -278,7 +278,7 @@ static void ultraleapSetFingerSizeFlag (t_ultraleap* x, t_float state)
 // info method
 static void ultraleapInfo (t_ultraleap* x)
 {
-    LEAP_DEVICE_INFO* deviceProps = GetDeviceProperties();
+    LEAP_DEVICE_INFO* deviceProps = LeapC_GetDeviceProperties();
 
     post ("\n\n[ultraleap] version %s\n", PD_ULTRALEAP_VERSION);
 
@@ -301,7 +301,7 @@ static void ultraleapInfo (t_ultraleap* x)
 
     // Requesting the current tracking mode is asynchronous. After you call this function, a subsequent call to LeapPollConnection provides a LEAP_TRACKING_MODE_EVENT containing the current tracking mode, reflecting any changes.
     // to trigger the _onTrackingMode callback
-    GetTrackingMode();
+    LeapC_GetTrackingMode();
 }
 
 
@@ -309,7 +309,7 @@ static void ultraleapInfo (t_ultraleap* x)
 static void ultraleapPoll (t_ultraleap* x)
 {
     uint32_t nHands;
-    LEAP_TRACKING_EVENT* frame = GetFrame();
+    LEAP_TRACKING_EVENT* frame = LeapC_GetFrame();
 
     if (frame && (frame->tracking_frame_id > x->x_lastFrameID))
     {
@@ -599,6 +599,6 @@ static void ultraleap_onDevice (const LEAP_DEVICE_INFO* props)
 // callback for when tracking mode changes
 static void ultraleap_onTrackingMode (const LEAP_TRACKING_MODE_EVENT* mode_event)
 {
-    const char* trackingMode = eLeapTrackingModeString (mode_event->current_tracking_mode);
+    const char* trackingMode = LeapC_eLeapTrackingModeString (mode_event->current_tracking_mode);
     post ("Leap Tracking Mode: %s", trackingMode);
 }

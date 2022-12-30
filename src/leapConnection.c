@@ -19,7 +19,7 @@ static void setFrame (const LEAP_TRACKING_EVENT* frame);
 static void setDevice (const LEAP_DEVICE_INFO* deviceProps);
 
 // external state
-bool IsConnected = false;
+bool LeapC_IsConnected = false;
 
 // internal state
 static volatile bool _isRunning = false;
@@ -28,7 +28,7 @@ static LEAP_TRACKING_EVENT* lastFrame = NULL;
 static LEAP_DEVICE_INFO* lastDevice = NULL;
 
 // callback function pointers
-struct Callbacks ConnectionCallbacks;
+struct Callbacks LeapC_ConnectionCallbacks;
 
 //Threading variables
 #if defined(_MSC_VER)
@@ -40,7 +40,7 @@ struct Callbacks ConnectionCallbacks;
 #endif
 
 // creates the connection handle and opens a connection to the Leap Motion service. on success, creates a thread to service the LeapC message pump.
-LEAP_CONNECTION* OpenConnection (void)
+LEAP_CONNECTION* LeapC_OpenConnection (void)
 {
     if (_isRunning)
     {
@@ -67,7 +67,7 @@ LEAP_CONNECTION* OpenConnection (void)
     return &connectionHandle;
 }
 
-void CloseConnection (void)
+void LeapC_CloseConnection (void)
 {
     if (! _isRunning)
     {
@@ -85,9 +85,9 @@ void CloseConnection (void)
     #endif
 }
 
-void DestroyConnection (void)
+void LeapC_DestroyConnection (void)
 {
-    CloseConnection();
+    LeapC_CloseConnection();
     LeapDestroyConnection (connectionHandle);
 }
 
@@ -102,20 +102,20 @@ void CloseConnectionHandle (LEAP_CONNECTION* thisHandle)
 // called by serviceMessageLoop() when a connection event is returned by LeapPollConnection()
 static void handleConnectionEvent (const LEAP_CONNECTION_EVENT* connection_event)
 {
-    IsConnected = true;
-    if (ConnectionCallbacks.on_connection)
+    LeapC_IsConnected = true;
+    if (LeapC_ConnectionCallbacks.on_connection)
     {
-        ConnectionCallbacks.on_connection();
+        LeapC_ConnectionCallbacks.on_connection();
     }
 }
 
 // called by serviceMessageLoop() when a connection lost event is returned by LeapPollConnection()
 static void handleConnectionLostEvent (const LEAP_CONNECTION_LOST_EVENT* connection_lost_event)
 {
-    IsConnected = false;
-    if (ConnectionCallbacks.on_connection_lost)
+    LeapC_IsConnected = false;
+    if (LeapC_ConnectionCallbacks.on_connection_lost)
     {
-        ConnectionCallbacks.on_connection_lost();
+        LeapC_ConnectionCallbacks.on_connection_lost();
     }
 }
 
@@ -128,7 +128,7 @@ static void handleDeviceEvent (const LEAP_DEVICE_EVENT* device_event)
 
     if (result != eLeapRS_Success)
     {
-        printf("Could not open device %s.\n", eLeapRSResultString (result));
+        printf("Could not open device %s.\n", LeapC_eLeapRSResultString (result));
         return;
     }
 
@@ -149,16 +149,16 @@ static void handleDeviceEvent (const LEAP_DEVICE_EVENT* device_event)
         result = LeapGetDeviceInfo (deviceHandle, &deviceProperties);
         if (result != eLeapRS_Success)
         {
-            printf ("Failed to get device info %s.\n", eLeapRSResultString (result));
+            printf ("Failed to get device info %s.\n", LeapC_eLeapRSResultString (result));
             free (deviceProperties.serial);
             return;
         }
     }
 
     setDevice (&deviceProperties);
-    if (ConnectionCallbacks.on_device_found)
+    if (LeapC_ConnectionCallbacks.on_device_found)
     {
-        ConnectionCallbacks.on_device_found (&deviceProperties);
+        LeapC_ConnectionCallbacks.on_device_found (&deviceProperties);
     }
 
     free (deviceProperties.serial);
@@ -168,18 +168,18 @@ static void handleDeviceEvent (const LEAP_DEVICE_EVENT* device_event)
 // called by serviceMessageLoop() when a device lost event is returned by LeapPollConnection()
 static void handleDeviceLostEvent (const LEAP_DEVICE_EVENT* device_event)
 {
-    if (ConnectionCallbacks.on_device_lost)
+    if (LeapC_ConnectionCallbacks.on_device_lost)
     {
-        ConnectionCallbacks.on_device_lost();
+        LeapC_ConnectionCallbacks.on_device_lost();
     }
 }
 
 // called by serviceMessageLoop() when a device failure event is returned by LeapPollConnection()
 static void handleDeviceFailureEvent (const LEAP_DEVICE_FAILURE_EVENT* device_failure_event)
 {
-    if (ConnectionCallbacks.on_device_failure)
+    if (LeapC_ConnectionCallbacks.on_device_failure)
     {
-        ConnectionCallbacks.on_device_failure (device_failure_event->status, device_failure_event->hDevice);
+        LeapC_ConnectionCallbacks.on_device_failure (device_failure_event->status, device_failure_event->hDevice);
     }
 }
 
@@ -187,30 +187,30 @@ static void handleDeviceFailureEvent (const LEAP_DEVICE_FAILURE_EVENT* device_fa
 static void handleTrackingEvent (const LEAP_TRACKING_EVENT* tracking_event)
 {
     setFrame (tracking_event); //support polling tracking data from different thread
-    if (ConnectionCallbacks.on_frame)
+    if (LeapC_ConnectionCallbacks.on_frame)
     {
-        ConnectionCallbacks.on_frame (tracking_event);
+        LeapC_ConnectionCallbacks.on_frame (tracking_event);
     }
 }
 
 // called by serviceMessageLoop() when a log event is returned by LeapPollConnection()
 static void handleLogEvent (const LEAP_LOG_EVENT* log_event)
 {
-    if (ConnectionCallbacks.on_log_message)
+    if (LeapC_ConnectionCallbacks.on_log_message)
     {
-        ConnectionCallbacks.on_log_message (log_event->severity, log_event->timestamp, log_event->message);
+        LeapC_ConnectionCallbacks.on_log_message (log_event->severity, log_event->timestamp, log_event->message);
     }
 }
 
 // called by serviceMessageLoop() when a log event is returned by LeapPollConnection()
 static void handleLogEvents (const LEAP_LOG_EVENTS* log_events)
 {
-    if (ConnectionCallbacks.on_log_message)
+    if (LeapC_ConnectionCallbacks.on_log_message)
     {
         for (int i = 0; i < (int)(log_events->nEvents); i++)
         {
             const LEAP_LOG_EVENT* log_event = &log_events->events[i];
-            ConnectionCallbacks.on_log_message(log_event->severity, log_event->timestamp, log_event->message);
+            LeapC_ConnectionCallbacks.on_log_message(log_event->severity, log_event->timestamp, log_event->message);
         }
     }
 }
@@ -218,71 +218,71 @@ static void handleLogEvents (const LEAP_LOG_EVENTS* log_events)
 // called by serviceMessageLoop() when a policy event is returned by LeapPollConnection()
 static void handlePolicyEvent (const LEAP_POLICY_EVENT* policy_event)
 {
-    if (ConnectionCallbacks.on_policy)
+    if (LeapC_ConnectionCallbacks.on_policy)
     {
-        ConnectionCallbacks.on_policy (policy_event->current_policy);
+        LeapC_ConnectionCallbacks.on_policy (policy_event->current_policy);
     }
 }
 
 // called by serviceMessageLoop() when a config change event is returned by LeapPollConnection()
 static void handleConfigChangeEvent (const LEAP_CONFIG_CHANGE_EVENT* config_change_event)
 {
-    if (ConnectionCallbacks.on_config_change)
+    if (LeapC_ConnectionCallbacks.on_config_change)
     {
-        ConnectionCallbacks.on_config_change (config_change_event->requestID, config_change_event->status);
+        LeapC_ConnectionCallbacks.on_config_change (config_change_event->requestID, config_change_event->status);
     }
 }
 
 // called by serviceMessageLoop() when a config response event is returned by LeapPollConnection()
 static void handleConfigResponseEvent (const LEAP_CONFIG_RESPONSE_EVENT* config_response_event)
 {
-    if (ConnectionCallbacks.on_config_response)
+    if (LeapC_ConnectionCallbacks.on_config_response)
     {
-        ConnectionCallbacks.on_config_response (config_response_event->requestID, config_response_event->value);
+        LeapC_ConnectionCallbacks.on_config_response (config_response_event->requestID, config_response_event->value);
     }
 }
 
 // called by serviceMessageLoop() when an image event is returned by LeapPollConnection()
 static void handleImageEvent (const LEAP_IMAGE_EVENT* image_event)
 {
-    if (ConnectionCallbacks.on_image)
+    if (LeapC_ConnectionCallbacks.on_image)
     {
-        ConnectionCallbacks.on_image (image_event);
+        LeapC_ConnectionCallbacks.on_image (image_event);
     }
 }
 
 // called by serviceMessageLoop() when a point mapping change event is returned by LeapPollConnection()
 static void handlePointMappingChangeEvent (const LEAP_POINT_MAPPING_CHANGE_EVENT* point_mapping_change_event)
 {
-    if (ConnectionCallbacks.on_point_mapping_change)
+    if (LeapC_ConnectionCallbacks.on_point_mapping_change)
     {
-        ConnectionCallbacks.on_point_mapping_change (point_mapping_change_event);
+        LeapC_ConnectionCallbacks.on_point_mapping_change (point_mapping_change_event);
     }
 }
 
 // called by serviceMessageLoop() when a point mapping change event is returned by LeapPollConnection()
 static void handleHeadPoseEvent (const LEAP_HEAD_POSE_EVENT* head_pose_event)
 {
-      if (ConnectionCallbacks.on_head_pose)
+      if (LeapC_ConnectionCallbacks.on_head_pose)
       {
-          ConnectionCallbacks.on_head_pose (head_pose_event);
+          LeapC_ConnectionCallbacks.on_head_pose (head_pose_event);
       }
 }
 
 // called by serviceMessageLoop() when an IMU event is returned by LeapPollConnection()
 static void handleImuEvent (const LEAP_IMU_EVENT* imu_event)
 {
-    if (ConnectionCallbacks.on_imu)
+    if (LeapC_ConnectionCallbacks.on_imu)
     {
-        ConnectionCallbacks.on_imu (imu_event);
+        LeapC_ConnectionCallbacks.on_imu (imu_event);
     }
 }
 
 static void handleTrackingModeEvent (const LEAP_TRACKING_MODE_EVENT* mode_event)
 {
-    if (ConnectionCallbacks.on_tracking_mode)
+    if (LeapC_ConnectionCallbacks.on_tracking_mode)
     {
-        ConnectionCallbacks.on_tracking_mode (mode_event);
+        LeapC_ConnectionCallbacks.on_tracking_mode (mode_event);
     }
 }
 
@@ -302,7 +302,7 @@ static void handleTrackingModeEvent (const LEAP_TRACKING_MODE_EVENT* mode_event)
 
         if (result != eLeapRS_Success)
         {
-            printf ("LeapC PollConnection call was %s.\n", eLeapRSResultString (result));
+            printf ("LeapC PollConnection call was %s.\n", LeapC_eLeapRSResultString (result));
             continue;
         }
 
@@ -385,7 +385,7 @@ void setFrame (const LEAP_TRACKING_EVENT* frame)
 }
 
 // returns a pointer to the cached tracking frame
-LEAP_TRACKING_EVENT* GetFrame()
+LEAP_TRACKING_EVENT* LeapC_GetFrame()
 {
     LEAP_TRACKING_EVENT* currentFrame;
 
@@ -416,7 +416,7 @@ static void setDevice (const LEAP_DEVICE_INFO* deviceProps)
 }
 
 // returns a pointer to the cached device info
-LEAP_DEVICE_INFO* GetDeviceProperties()
+LEAP_DEVICE_INFO* LeapC_GetDeviceProperties()
 {
     LEAP_DEVICE_INFO* currentDevice;
     LockMutex (&dataLock);
@@ -425,20 +425,20 @@ LEAP_DEVICE_INFO* GetDeviceProperties()
     return currentDevice;
 }
 
-const char* SetTrackingMode (eLeapTrackingMode m)
+const char* LeapC_SetTrackingMode (eLeapTrackingMode m)
 {
     eLeapRS result = LeapSetTrackingMode (connectionHandle, m);
-    return eLeapRSResultString (result);
+    return LeapC_eLeapRSResultString (result);
 }
 
-const char* GetTrackingMode (void)
+const char* LeapC_GetTrackingMode (void)
 {
     eLeapRS result = LeapGetTrackingMode (connectionHandle);
-    return eLeapRSResultString (result);
+    return LeapC_eLeapRSResultString (result);
 }
 
 // translates eLeapRS result codes into a human-readable string
-const char* eLeapRSResultString (eLeapRS r)
+const char* LeapC_eLeapRSResultString (eLeapRS r)
 {
     switch (r)
     {
@@ -467,7 +467,7 @@ const char* eLeapRSResultString (eLeapRS r)
 }
 
 // translates eLeapTrackingMode result codes into a human-readable string
-const char* eLeapTrackingModeString (eLeapTrackingMode m)
+const char* LeapC_eLeapTrackingModeString (eLeapTrackingMode m)
 {
     switch (m)
     {

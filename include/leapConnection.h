@@ -29,17 +29,17 @@
 #include "LeapC.h"
 
 // client functions
-LEAP_CONNECTION* OpenConnection (void);
-void CloseConnection (void);
-void DestroyConnection (void);
-LEAP_TRACKING_EVENT* GetFrame (void);
-LEAP_DEVICE_INFO* GetDeviceProperties (void);
-const char* SetTrackingMode (eLeapTrackingMode m);
-const char* GetTrackingMode (void);
-const char* eLeapRSResultString (eLeapRS r);
-const char* eLeapTrackingModeString (eLeapTrackingMode m);
+LEAP_CONNECTION* LeapC_OpenConnection (void);
+void LeapC_CloseConnection (void);
+void LeapC_DestroyConnection (void);
+LEAP_TRACKING_EVENT* LeapC_GetFrame (void);
+LEAP_DEVICE_INFO* LeapC_GetDeviceProperties (void);
+const char* LeapC_SetTrackingMode (eLeapTrackingMode m);
+const char* LeapC_GetTrackingMode (void);
+const char* LeapC_eLeapRSResultString (eLeapRS r);
+const char* LeapC_eLeapTrackingModeString (eLeapTrackingMode m);
 
-extern bool IsConnected;
+extern bool LeapC_IsConnected;
 
 // callback function pointers
 typedef void (*connection_callback)     (void);
@@ -78,7 +78,7 @@ struct Callbacks{
   tracking_mode_callback   on_tracking_mode;
 };
 
-extern struct Callbacks ConnectionCallbacks;
+extern struct Callbacks LeapC_ConnectionCallbacks;
 // extern void millisleep (int milliseconds);
 
 #endif /* LEAP_CONNECTION_H */
