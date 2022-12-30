@@ -2,7 +2,8 @@
 #include "LeapC.h"
 #include "leapConnection.h"
 
-#define PD_ULTRALEAP_VERSION "version 0.1.0"
+#define PD_ULTRALEAP_VERSION "0.1.0"
+#define PD_ULTRALEAP_RELEASE_DATE "Dec 2022"
 #define NUM_FINGERS 5
 
 static t_class* ultraleap_class;
@@ -60,16 +61,16 @@ static void ultraleapSetFingerSizeFlag (t_ultraleap* x, t_float state);
 // post object info
 static void ultraleapInfo (t_ultraleap* x);
 
-// leapConnection callback functions
-static void ultraleap_onConnect (void);
-static void ultraleap_onTrackingMode (const LEAP_TRACKING_MODE_EVENT* mode_event);
-// static void OnDevice (const LEAP_DEVICE_INFO *props);
-// static void OnFrame (const LEAP_TRACKING_EVENT *frame);
-
 // poll Leap device
 static void ultraleapPoll (t_ultraleap* x);
 
-// sub-routinese to extract data from a Leap::Frame
+// sub-routines to extract data from a Leap::Frame
 static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
 static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fingerList);
 static void ultraleapProcessGeneral(t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
+
+// leapConnection callback functions
+static void ultraleap_onConnect (void);
+static void ultraleap_onTrackingMode (const LEAP_TRACKING_MODE_EVENT* mode_event);
+static void ultraleap_onDevice (const LEAP_DEVICE_INFO* props);
+// static void OnFrame (const LEAP_TRACKING_EVENT *frame);

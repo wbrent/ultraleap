@@ -14,6 +14,7 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 
     // set up callback Functions
     ConnectionCallbacks.on_connection = &ultraleap_onConnect;
+    ConnectionCallbacks.on_device_found = &ultraleap_onDevice;
     ConnectionCallbacks.on_tracking_mode = &ultraleap_onTrackingMode;
 
     // initialize the last frame ID
@@ -21,6 +22,7 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
     // open a connection and keep a handle for it
     x->x_leapConnection = OpenConnection();
     SetTrackingMode (eLeapTrackingMode_Desktop);
+    result = LeapGetVersion (*(x->x_leapConnection), eLeapVersionPart_ClientLibrary, &leapVersion);
 
     x->x_handTypeFlag = 0.0;
     x->x_handPalmDirectionFlag = 0.0;
@@ -36,13 +38,11 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 
     x->x_generalFlag = 1.0;
 
-    result = LeapGetVersion (*(x->x_leapConnection), eLeapVersionPart_ClientLibrary, &leapVersion);
-
     post ("\n****************");
-    post ("[ultraleap] for Pd %s", PD_ULTRALEAP_VERSION);
+    post ("[ultraleap] version %s", PD_ULTRALEAP_VERSION);
     if (result == eLeapRS_Success)
         post ("built using LeapC API: %d.%d.%d", leapVersion.major, leapVersion.minor, leapVersion.patch);
-    post ("William Brent, Dec 2022");
+    post ("William Brent, %s", PD_ULTRALEAP_RELEASE_DATE);
     post ("****************\n");
 
     return (void*) x;
@@ -51,10 +51,6 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 // destructor
 static void ultraleap_free (t_ultraleap* x)
 {
-    // calling this crashes Pd when deleting/recreating [ultraleap]
-    // DestroyConnection();
-    // DestroyConnection() calls CloseConnection(), but also LeapDestroyConnection(), which destroys the underlying connectionHandle object and releases all resources associated with it. not sure why this causes a crash when deleting/recreating [ultraleap], but it does.
-
     // just calling CloseConnection() seems to work without any issues. is that all the cleanup that's required?
     CloseConnection();
 }
@@ -99,7 +95,6 @@ void ultraleap_setup (void)
         A_DEFFLOAT,
         A_NULL
     );
-
 
     // hands
     class_addmethod (
@@ -283,7 +278,9 @@ static void ultraleapSetFingerSizeFlag (t_ultraleap* x, t_float state)
 // info method
 static void ultraleapInfo (t_ultraleap* x)
 {
-    post ("\n\n[ultraleap] %s\n", PD_ULTRALEAP_VERSION);
+    LEAP_DEVICE_INFO* deviceProps = GetDeviceProperties();
+
+    post ("\n\n[ultraleap] version %s\n", PD_ULTRALEAP_VERSION);
 
     post ("general: %1.0f\n", x->x_generalFlag);
 
@@ -299,15 +296,11 @@ static void ultraleapInfo (t_ultraleap* x)
     post ("finger_velocity: %1.0f", x->x_fingerVelocityFlag);
     post ("finger_size: %1.0f\n", x->x_fingerSizeFlag);
 
-    LEAP_DEVICE_INFO* deviceProps = GetDeviceProperties();
     if (deviceProps)
       post ("Using device: %s", deviceProps->serial);
 
-    const char* result = SetTrackingMode (0);
-    if (result)
-      post ("SetTrackingMode() result: %s", result);
-
     // Requesting the current tracking mode is asynchronous. After you call this function, a subsequent call to LeapPollConnection provides a LEAP_TRACKING_MODE_EVENT containing the current tracking mode, reflecting any changes.
+    // to trigger the _onTrackingMode callback
     GetTrackingMode();
 }
 
@@ -595,6 +588,12 @@ static void ultraleapProcessGeneral (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
 static void ultraleap_onConnect (void)
 {
     post ("Leap Controller: Connected");
+}
+
+// callback for when device is found
+static void ultraleap_onDevice (const LEAP_DEVICE_INFO* props)
+{
+    post ("Using device: %s", props->serial);
 }
 
 // callback for when tracking mode changes
