@@ -4,6 +4,8 @@
 static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 {
     t_ultraleap* x = (t_ultraleap*) pd_new (ultraleap_class);
+    LEAP_VERSION leapVersion;
+    eLeapRS result;
 
     x->x_outletGeneral = outlet_new (&x->x_obj, &s_list);
   	x->x_outletHands = outlet_new (&x->x_obj, &s_list);
@@ -16,11 +18,9 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 
     // initialize the last frame ID
     x->x_lastFrameID = 0;
-    // TODO: is there no reason to keep a pointer to the connection?
-    // x->x_leapConnection = OpenConnection();
-    // open a connection
-    OpenConnection();
-    // SetTrackingMode (eLeapTrackingMode_ScreenTop);
+    // open a connection and keep a handle for it
+    x->x_leapConnection = OpenConnection();
+    SetTrackingMode (eLeapTrackingMode_Desktop);
 
     x->x_handTypeFlag = 0.0;
     x->x_handPalmDirectionFlag = 0.0;
@@ -36,8 +36,12 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 
     x->x_generalFlag = 1.0;
 
+    result = LeapGetVersion (*(x->x_leapConnection), eLeapVersionPart_ClientLibrary, &leapVersion);
+
     post ("\n****************");
     post ("[ultraleap] for Pd %s", PD_ULTRALEAP_VERSION);
+    if (result == eLeapRS_Success)
+        post ("built using LeapC API: %d.%d.%d", leapVersion.major, leapVersion.minor, leapVersion.patch);
     post ("William Brent, Dec 2022");
     post ("****************\n");
 

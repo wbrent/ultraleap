@@ -13,6 +13,7 @@ typedef struct _ultraleap
     t_symbol* x_objSymbol;
 
     int64_t x_lastFrameID;
+    LEAP_CONNECTION* x_leapConnection;
 
     t_float x_handTypeFlag;
     t_float x_handPalmDirectionFlag;
