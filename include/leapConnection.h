@@ -79,6 +79,5 @@ struct Callbacks{
 };
 
 extern struct Callbacks LeapC_ConnectionCallbacks;
-// extern void millisleep (int milliseconds);
 
 #endif /* LEAP_CONNECTION_H */

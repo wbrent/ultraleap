@@ -25,10 +25,10 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
     result = LeapGetVersion (*(x->x_leapConnection), eLeapVersionPart_ClientLibrary, &leapVersion);
 
     x->x_handTypeFlag = 0.0;
-    x->x_handPalmDirectionFlag = 0.0;
-    x->x_handPalmNormalFlag = 0.0;
-    x->x_handPalmPositionFlag = 1.0;
-    x->x_handPalmVelocityFlag = 0.0;
+    x->x_palmDirectionFlag = 0.0;
+    x->x_palmNormalFlag = 0.0;
+    x->x_palmPositionFlag = 1.0;
+    x->x_palmVelocityFlag = 0.0;
     x->x_handFingerCountFlag = 0.0;
 
     x->x_fingerDirectionFlag = 0.0;
@@ -96,7 +96,7 @@ void ultraleap_setup (void)
         A_NULL
     );
 
-    // hands
+    // hand
     class_addmethod (
         ultraleap_class,
         (t_method) ultraleapSetHandTypeFlag,
@@ -107,44 +107,44 @@ void ultraleap_setup (void)
 
     class_addmethod (
         ultraleap_class,
-        (t_method) ultraleapSetHandPalmDirectionFlag,
-        gensym ("hand_palm_direction"),
-        A_DEFFLOAT,
-        A_NULL
-    );
-
-    class_addmethod (
-        ultraleap_class,
-        (t_method) ultraleapSetHandPalmNormalFlag,
-        gensym ("hand_palm_normal"),
-        A_DEFFLOAT,
-        A_NULL
-    );
-
-    class_addmethod (
-        ultraleap_class,
-        (t_method) ultraleapSetHandPalmPositionFlag,
-        gensym ("hand_palm_position"),
-        A_DEFFLOAT,
-        A_NULL
-    );
-
-    class_addmethod (
-        ultraleap_class,
-        (t_method) ultraleapSetHandPalmVelocityFlag,
-        gensym ("hand_palm_velocity"),
-        A_DEFFLOAT,
-        A_NULL
-    );
-
-    class_addmethod (
-        ultraleap_class,
         (t_method) ultraleapSetHandFingerCountFlag,
-        gensym ("hand_finger_count"),
+        gensym ("finger_count"),
         A_DEFFLOAT,
         A_NULL
     );
 
+    // palm
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetPalmDirectionFlag,
+        gensym ("palm_direction"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetPalmNormalFlag,
+        gensym ("palm_normal"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetPalmPositionFlag,
+        gensym ("palm_position"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetPalmVelocityFlag,
+        gensym ("palm_velocity"),
+        A_DEFFLOAT,
+        A_NULL
+    );
 
     // fingers
     class_addmethod (
@@ -200,36 +200,36 @@ static void ultraleapSetHandTypeFlag (t_ultraleap* x, t_float state)
     x->x_handTypeFlag = state;
 }
 
-static void ultraleapSetHandPalmDirectionFlag (t_ultraleap* x, t_float state)
+static void ultraleapSetPalmDirectionFlag (t_ultraleap* x, t_float state)
 {
     state = (state < 0.0) ? 0.0 : state;
     state = (state > 1.0) ? 1.0 : state;
 
-    x->x_handPalmDirectionFlag = state;
+    x->x_palmDirectionFlag = state;
 }
 
-static void ultraleapSetHandPalmNormalFlag (t_ultraleap* x, t_float state)
+static void ultraleapSetPalmNormalFlag (t_ultraleap* x, t_float state)
 {
     state = (state < 0.0) ? 0.0 : state;
     state = (state > 1.0) ? 1.0 : state;
 
-    x->x_handPalmNormalFlag = state;
+    x->x_palmNormalFlag = state;
 }
 
-static void ultraleapSetHandPalmPositionFlag (t_ultraleap* x, t_float state)
+static void ultraleapSetPalmPositionFlag (t_ultraleap* x, t_float state)
 {
     state = (state < 0.0) ? 0.0 : state;
     state = (state > 1.0) ? 1.0 : state;
 
-    x->x_handPalmPositionFlag = state;
+    x->x_palmPositionFlag = state;
 }
 
-static void ultraleapSetHandPalmVelocityFlag (t_ultraleap* x, t_float state)
+static void ultraleapSetPalmVelocityFlag (t_ultraleap* x, t_float state)
 {
     state = (state < 0.0) ? 0.0 : state;
     state = (state > 1.0) ? 1.0 : state;
 
-    x->x_handPalmVelocityFlag = state;
+    x->x_palmVelocityFlag = state;
 }
 
 static void ultraleapSetHandFingerCountFlag (t_ultraleap* x, t_float state)
@@ -280,16 +280,16 @@ static void ultraleapInfo (t_ultraleap* x)
 {
     LEAP_DEVICE_INFO* deviceProps = LeapC_GetDeviceProperties();
 
-    post ("\n\n[ultraleap] version %s\n", PD_ULTRALEAP_VERSION);
+    post ("\n[ultraleap] version %s\n", PD_ULTRALEAP_VERSION);
 
     post ("general: %1.0f\n", x->x_generalFlag);
 
     post ("hand_type: %1.0f", x->x_handTypeFlag);
-    post ("hand_palm_direction: %1.0f", x->x_handPalmDirectionFlag);
-    post ("hand_palm_normal: %1.0f", x->x_handPalmNormalFlag);
-    post ("hand_palm_position: %1.0f", x->x_handPalmPositionFlag);
-    post ("hand_palm_velocity: %1.0f", x->x_handPalmVelocityFlag);
-    post ("hand_finger_count: %1.0f\n", x->x_handFingerCountFlag);
+    post ("finger_count: %1.0f\n", x->x_handFingerCountFlag);
+    post ("palm_direction: %1.0f", x->x_palmDirectionFlag);
+    post ("palm_normal: %1.0f", x->x_palmNormalFlag);
+    post ("palm_position: %1.0f", x->x_palmPositionFlag);
+    post ("palm_velocity: %1.0f\n", x->x_palmVelocityFlag);
 
     post ("finger_direction: %1.0f", x->x_fingerDirectionFlag);
     post ("finger_position: %1.0f", x->x_fingerPositionFlag);
@@ -297,13 +297,12 @@ static void ultraleapInfo (t_ultraleap* x)
     post ("finger_size: %1.0f\n", x->x_fingerSizeFlag);
 
     if (deviceProps)
-      post ("Using device: %s", deviceProps->serial);
+        post ("Using device: %s", deviceProps->serial);
 
     // Requesting the current tracking mode is asynchronous. After you call this function, a subsequent call to LeapPollConnection provides a LEAP_TRACKING_MODE_EVENT containing the current tracking mode, reflecting any changes.
     // to trigger the _onTrackingMode callback
     LeapC_GetTrackingMode();
 }
-
 
 // poll method
 static void ultraleapPoll (t_ultraleap* x)
@@ -339,13 +338,6 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         // get a pointer to the array of digits
         LEAP_DIGIT* fingerList = &hand.digits[0];
 
-        // post ("thumb: %f, index: %f, middle: %f, ring: %f, pinky: %f", hand->thumb.distal.next_joint.x, hand->index.distal.next_joint.x, hand->middle.distal.next_joint.x, hand->ring.distal.next_joint.x, hand->pinky.distal.next_joint.x);
-
-/*
-        // from LeapSDK/docs/cpp/devguide/Leap_Pointables.html: "As of version 2.0 of the Leap Motion SDK, all five fingers are are always present in the list of fingers for a hand."
-        // therefore, Leap::FingerList.count() will not work as it did in the previous SDK. can use Leap::Finger.isExtended() to determine which ones are actually out.
-        // numFingersPerHand = fingerList.count();
-*/
         // set first atom to handIdx since all output lists will begin with that
         SETFLOAT (&handInfo[0], handIdx);
 
@@ -418,7 +410,7 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
 
         // PALM
         // direction
-        if (x->x_handPalmDirectionFlag)
+        if (x->x_palmDirectionFlag)
         {
             SETSYMBOL (&handInfo[1], gensym ("palm"));
             SETSYMBOL (&handInfo[2], gensym ("direction"));
@@ -430,7 +422,7 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         }
 
         // palm normal
-        if (x->x_handPalmNormalFlag)
+        if (x->x_palmNormalFlag)
         {
             SETSYMBOL (&handInfo[1], gensym ("palm"));
             SETSYMBOL (&handInfo[2], gensym ("normal"));
@@ -442,7 +434,7 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         }
 
         // palm position
-        if (x->x_handPalmPositionFlag)
+        if (x->x_palmPositionFlag)
         {
             SETSYMBOL (&handInfo[1], gensym ("palm"));
             SETSYMBOL (&handInfo[2], gensym ("position"));
@@ -454,7 +446,7 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         }
 
         // palm velocity
-        if (x->x_handPalmVelocityFlag)
+        if (x->x_palmVelocityFlag)
         {
             SETSYMBOL (&handInfo[1], gensym ("palm"));
             SETSYMBOL (&handInfo[2], gensym ("velocity"));
@@ -484,6 +476,12 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         // process fingers per hand
         ultraleapProcessFingers (x, handIdx, fingerList);
     }
+}
+
+// process arm per hand
+static void ultraleapProcessArm (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
+{
+
 }
 
 // process fingers
@@ -575,7 +573,7 @@ static void ultraleapProcessGeneral (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
     t_atom generalInfo[numGeneralInfoAtoms];
 
     SETFLOAT (&generalInfo[0], (t_float) frame->tracking_frame_id);
-    SETFLOAT (&generalInfo[1], (t_float) (frame->info.timestamp / (t_float)1000000));
+    SETFLOAT (&generalInfo[1], (t_float) (frame->info.timestamp / (t_float) 1000000));
     SETFLOAT (&generalInfo[2], (t_float) frame->framerate);
     SETFLOAT (&generalInfo[3], (t_float) frame->nHands);
 
@@ -583,7 +581,8 @@ static void ultraleapProcessGeneral (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
 }
 
 
-// callback functions
+//// callback functions
+//
 // callback for when the connection opens
 static void ultraleap_onConnect (void)
 {

@@ -91,12 +91,80 @@ void LeapC_DestroyConnection (void)
     LeapDestroyConnection (connectionHandle);
 }
 
-
-// close the connection and let message thread function end
-void CloseConnectionHandle (LEAP_CONNECTION* thisHandle)
+// returns a pointer to the cached device info
+LEAP_DEVICE_INFO* LeapC_GetDeviceProperties()
 {
-    LeapDestroyConnection (*thisHandle);
-    _isRunning = false;
+    LEAP_DEVICE_INFO* currentDevice;
+    LockMutex (&dataLock);
+    currentDevice = lastDevice;
+    UnlockMutex (&dataLock);
+    return currentDevice;
+}
+
+const char* LeapC_SetTrackingMode (eLeapTrackingMode m)
+{
+    eLeapRS result = LeapSetTrackingMode (connectionHandle, m);
+    return LeapC_eLeapRSResultString (result);
+}
+
+const char* LeapC_GetTrackingMode (void)
+{
+    eLeapRS result = LeapGetTrackingMode (connectionHandle);
+    return LeapC_eLeapRSResultString (result);
+}
+
+// returns a pointer to the cached tracking frame
+LEAP_TRACKING_EVENT* LeapC_GetFrame()
+{
+    LEAP_TRACKING_EVENT* currentFrame;
+
+    LockMutex (&dataLock);
+    currentFrame = lastFrame;
+    UnlockMutex (&dataLock);
+
+    return currentFrame;
+}
+
+// translates eLeapRS result codes into a human-readable string
+const char* LeapC_eLeapRSResultString (eLeapRS r)
+{
+    switch (r)
+    {
+        case eLeapRS_Success:                  return "eLeapRS_Success";
+        case eLeapRS_UnknownError:             return "eLeapRS_UnknownError";
+        case eLeapRS_InvalidArgument:          return "eLeapRS_InvalidArgument";
+        case eLeapRS_InsufficientResources:    return "eLeapRS_InsufficientResources";
+        case eLeapRS_InsufficientBuffer:       return "eLeapRS_InsufficientBuffer";
+        case eLeapRS_Timeout:                  return "eLeapRS_Timeout";
+        case eLeapRS_NotConnected:             return "eLeapRS_NotConnected";
+        case eLeapRS_HandshakeIncomplete:      return "eLeapRS_HandshakeIncomplete";
+        case eLeapRS_BufferSizeOverflow:       return "eLeapRS_BufferSizeOverflow";
+        case eLeapRS_ProtocolError:            return "eLeapRS_ProtocolError";
+        case eLeapRS_InvalidClientID:          return "eLeapRS_InvalidClientID";
+        case eLeapRS_UnexpectedClosed:         return "eLeapRS_UnexpectedClosed";
+        case eLeapRS_UnknownImageFrameRequest: return "eLeapRS_UnknownImageFrameRequest";
+        case eLeapRS_UnknownTrackingFrameID:   return "eLeapRS_UnknownTrackingFrameID";
+        case eLeapRS_RoutineIsNotSeer:         return "eLeapRS_RoutineIsNotSeer";
+        case eLeapRS_TimestampTooEarly:        return "eLeapRS_TimestampTooEarly";
+        case eLeapRS_ConcurrentPoll:           return "eLeapRS_ConcurrentPoll";
+        case eLeapRS_NotAvailable:             return "eLeapRS_NotAvailable";
+        case eLeapRS_NotStreaming:             return "eLeapRS_NotStreaming";
+        case eLeapRS_CannotOpenDevice:         return "eLeapRS_CannotOpenDevice";
+        default:                               return "unknown result type.";
+    }
+}
+
+// translates eLeapTrackingMode result codes into a human-readable string
+const char* LeapC_eLeapTrackingModeString (eLeapTrackingMode m)
+{
+    switch (m)
+    {
+        case eLeapTrackingMode_Desktop:                  return "eLeapTrackingMode_Desktop";
+        case eLeapTrackingMode_HMD:             return "eLeapTrackingMode_HMD";
+        case eLeapTrackingMode_ScreenTop:          return "eLeapTrackingMode_ScreenTop";
+        case eLeapTrackingMode_Unknown:    return "eLeapTrackingMode_Unknown";
+        default:                               return "unknown tracking mode type.";
+    }
 }
 
 // called by serviceMessageLoop() when a connection event is returned by LeapPollConnection()
@@ -384,18 +452,6 @@ void setFrame (const LEAP_TRACKING_EVENT* frame)
     UnlockMutex (&dataLock);
 }
 
-// returns a pointer to the cached tracking frame
-LEAP_TRACKING_EVENT* LeapC_GetFrame()
-{
-    LEAP_TRACKING_EVENT* currentFrame;
-
-    LockMutex (&dataLock);
-    currentFrame = lastFrame;
-    UnlockMutex (&dataLock);
-
-    return currentFrame;
-}
-
 // caches the last device found by copying the device info struct returned by LeapC
 static void setDevice (const LEAP_DEVICE_INFO* deviceProps)
 {
@@ -414,79 +470,3 @@ static void setDevice (const LEAP_DEVICE_INFO* deviceProps)
     memcpy (lastDevice->serial, deviceProps->serial, deviceProps->serial_length);
     UnlockMutex (&dataLock);
 }
-
-// returns a pointer to the cached device info
-LEAP_DEVICE_INFO* LeapC_GetDeviceProperties()
-{
-    LEAP_DEVICE_INFO* currentDevice;
-    LockMutex (&dataLock);
-    currentDevice = lastDevice;
-    UnlockMutex (&dataLock);
-    return currentDevice;
-}
-
-const char* LeapC_SetTrackingMode (eLeapTrackingMode m)
-{
-    eLeapRS result = LeapSetTrackingMode (connectionHandle, m);
-    return LeapC_eLeapRSResultString (result);
-}
-
-const char* LeapC_GetTrackingMode (void)
-{
-    eLeapRS result = LeapGetTrackingMode (connectionHandle);
-    return LeapC_eLeapRSResultString (result);
-}
-
-// translates eLeapRS result codes into a human-readable string
-const char* LeapC_eLeapRSResultString (eLeapRS r)
-{
-    switch (r)
-    {
-        case eLeapRS_Success:                  return "eLeapRS_Success";
-        case eLeapRS_UnknownError:             return "eLeapRS_UnknownError";
-        case eLeapRS_InvalidArgument:          return "eLeapRS_InvalidArgument";
-        case eLeapRS_InsufficientResources:    return "eLeapRS_InsufficientResources";
-        case eLeapRS_InsufficientBuffer:       return "eLeapRS_InsufficientBuffer";
-        case eLeapRS_Timeout:                  return "eLeapRS_Timeout";
-        case eLeapRS_NotConnected:             return "eLeapRS_NotConnected";
-        case eLeapRS_HandshakeIncomplete:      return "eLeapRS_HandshakeIncomplete";
-        case eLeapRS_BufferSizeOverflow:       return "eLeapRS_BufferSizeOverflow";
-        case eLeapRS_ProtocolError:            return "eLeapRS_ProtocolError";
-        case eLeapRS_InvalidClientID:          return "eLeapRS_InvalidClientID";
-        case eLeapRS_UnexpectedClosed:         return "eLeapRS_UnexpectedClosed";
-        case eLeapRS_UnknownImageFrameRequest: return "eLeapRS_UnknownImageFrameRequest";
-        case eLeapRS_UnknownTrackingFrameID:   return "eLeapRS_UnknownTrackingFrameID";
-        case eLeapRS_RoutineIsNotSeer:         return "eLeapRS_RoutineIsNotSeer";
-        case eLeapRS_TimestampTooEarly:        return "eLeapRS_TimestampTooEarly";
-        case eLeapRS_ConcurrentPoll:           return "eLeapRS_ConcurrentPoll";
-        case eLeapRS_NotAvailable:             return "eLeapRS_NotAvailable";
-        case eLeapRS_NotStreaming:             return "eLeapRS_NotStreaming";
-        case eLeapRS_CannotOpenDevice:         return "eLeapRS_CannotOpenDevice";
-        default:                               return "unknown result type.";
-    }
-}
-
-// translates eLeapTrackingMode result codes into a human-readable string
-const char* LeapC_eLeapTrackingModeString (eLeapTrackingMode m)
-{
-    switch (m)
-    {
-        case eLeapTrackingMode_Desktop:                  return "eLeapTrackingMode_Desktop";
-        case eLeapTrackingMode_HMD:             return "eLeapTrackingMode_HMD";
-        case eLeapTrackingMode_ScreenTop:          return "eLeapTrackingMode_ScreenTop";
-        case eLeapTrackingMode_Unknown:    return "eLeapTrackingMode_Unknown";
-        default:                               return "unknown tracking mode type.";
-    }
-}
-
-/*
-// cross-platform sleep function
-void millisleep (int milliseconds)
-{
-    #ifdef _WIN32
-        Sleep (milliseconds);
-    #else
-        usleep (milliseconds * 1000);
-    #endif
-}
-*/

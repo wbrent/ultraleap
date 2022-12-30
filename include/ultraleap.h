@@ -17,11 +17,12 @@ typedef struct _ultraleap
     LEAP_CONNECTION* x_leapConnection;
 
     t_float x_handTypeFlag;
-    t_float x_handPalmDirectionFlag;
-    t_float x_handPalmNormalFlag;
-    t_float x_handPalmPositionFlag;
-    t_float x_handPalmVelocityFlag;
     t_float x_handFingerCountFlag;
+
+    t_float x_palmDirectionFlag;
+    t_float x_palmNormalFlag;
+    t_float x_palmPositionFlag;
+    t_float x_palmVelocityFlag;
 
     t_float x_fingerDirectionFlag;
     t_float x_fingerPositionFlag;
@@ -46,11 +47,13 @@ static void ultraleapSetGeneralFlag (t_ultraleap* x, t_float state);
 
 // set methods: hand
 static void ultraleapSetHandTypeFlag (t_ultraleap* x, t_float state);
-static void ultraleapSetHandPalmDirectionFlag (t_ultraleap* x, t_float state);
-static void ultraleapSetHandPalmNormalFlag (t_ultraleap* x, t_float state);
-static void ultraleapSetHandPalmPositionFlag (t_ultraleap* x, t_float state);
-static void ultraleapSetHandPalmVelocityFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetHandFingerCountFlag (t_ultraleap* x, t_float state);
+
+// set methods: palm
+static void ultraleapSetPalmDirectionFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetPalmNormalFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetPalmPositionFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetPalmVelocityFlag (t_ultraleap* x, t_float state);
 
 // set methods: fingers
 static void ultraleapSetFingerDirectionFlag (t_ultraleap* x, t_float state);
@@ -66,6 +69,7 @@ static void ultraleapPoll (t_ultraleap* x);
 
 // sub-routines to extract data from a Leap::Frame
 static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
+static void ultraleapProcessArm (t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
 static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fingerList);
 static void ultraleapProcessGeneral(t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
 
