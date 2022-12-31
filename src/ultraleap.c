@@ -1,5 +1,7 @@
 #include "ultraleap.h"
 
+// TODO: add timestamp reset method and subtract it from the timestamp general output
+
 // constructor
 static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 {

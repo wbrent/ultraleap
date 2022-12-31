@@ -51,7 +51,7 @@
 #X floatatom 195 523 5 0 0 0 pinch_strength - - 0;
 #X floatatom 195 540 5 0 0 0 pinch_distance - - 0;
 #X text 268 202 type;
-#X obj 819 111 route type finger_count grab_strength grab_angle pinch_strength pinch_distance time_visible;
+#X obj 771 125 route type finger_count grab_strength grab_angle pinch_strength pinch_distance time_visible;
 #X obj 690 231 route direction normal position stabilized_position velocity width;
 #X text 268 380 size;
 #X connect 0 0 38 0;
@@ -81,12 +81,12 @@
 #X connect 44 2 42 0;
 #X connect 46 0 45 0;
 #X connect 52 0 46 0;
-#X connect 52 2 39 0;
-#X connect 52 3 47 0;
-#X connect 52 4 48 0;
-#X connect 52 5 49 0;
-#X connect 52 6 50 0;
-#X connect 52 7 24 0;
+#X connect 52 1 39 0;
+#X connect 52 2 47 0;
+#X connect 52 3 48 0;
+#X connect 52 4 49 0;
+#X connect 52 5 50 0;
+#X connect 52 6 24 0;
 #X connect 53 0 44 0;
 #X connect 53 1 6 0;
 #X connect 53 2 5 0;
