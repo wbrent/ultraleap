@@ -16,8 +16,10 @@ typedef struct _ultraleap
     t_object x_obj;
     t_symbol* x_objSymbol;
 
-    int64_t x_lastFrameID;
     LEAP_CONNECTION* x_leapConnection;
+    LEAP_TRACKING_EVENT* x_leapFrame;
+    int64_t x_lastFrameID;
+    int64_t x_timeStampReference;
 
     t_float x_generalFlag;
 
@@ -29,6 +31,8 @@ typedef struct _ultraleap
     t_float x_handPinchStrengthFlag;
     t_float x_handPinchDistanceFlag;
 
+    t_float x_armCenterFlag;
+    t_float x_armDirectionFlag;
     t_float x_armWristPositionFlag;
     t_float x_armElbowPositionFlag;
     t_float x_armWidthFlag;
@@ -60,8 +64,11 @@ void ultraleap_setup (void);
 // utility functions
 static t_float ultraleapGetVectorMagnitude (LEAP_VECTOR v);
 static t_float ultraleapGetEuclideanDistance (LEAP_VECTOR a, LEAP_VECTOR b);
+static LEAP_VECTOR ultraleapGetVectorDiff (LEAP_VECTOR a, LEAP_VECTOR b);
 static LEAP_VECTOR ultraleapGetVectorCentroid (LEAP_VECTOR a, LEAP_VECTOR b);
 static LEAP_VECTOR ultraleapNormalizeVector (LEAP_VECTOR v);
+
+// timestamp_reset
 
 // set methods: mode
 static void ultraleapSetTrackingMode (t_ultraleap* x, t_symbol* m);
@@ -79,6 +86,8 @@ static void ultraleapSetHandPinchStrengthFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetHandPinchDistanceFlag (t_ultraleap* x, t_float state);
 
 // set methods: arm
+static void ultraleapSetArmCenterFlag (t_ultraleap* x, t_float state);
+static void ultraleapSetArmDirectionFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetArmWristPositionFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetArmElbowPositionFlag (t_ultraleap* x, t_float state);
 static void ultraleapSetArmWidthFlag (t_ultraleap* x, t_float state);
@@ -102,14 +111,17 @@ static void ultraleapSetFingerIsExtendedFlag (t_ultraleap* x, t_float state);
 // post object info
 static void ultraleapInfo (t_ultraleap* x);
 
+// reset time stamp reference point
+static void ultraleapResetTimeStamp (t_ultraleap* x);
+
 // poll Leap device
 static void ultraleapPoll (t_ultraleap* x);
 
 // sub-routines to extract data from a Leap::Frame
-static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
-static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
+static void ultraleapProcessHands (t_ultraleap* x);
+static void ultraleapProcessArms (t_ultraleap* x);
 static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fingerList);
-static void ultraleapProcessGeneral(t_ultraleap* x, LEAP_TRACKING_EVENT* frame);
+static void ultraleapProcessGeneral(t_ultraleap* x);
 
 // leapConnection callback functions
 static void ultraleap_onConnect (void);

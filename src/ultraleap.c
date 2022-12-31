@@ -1,7 +1,5 @@
 #include "ultraleap.h"
 
-// TODO: add timestamp reset method and subtract it from the timestamp general output
-
 // constructor
 static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 {
@@ -14,18 +12,22 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
 
     x->x_objSymbol = s;
 
-    // set up callback Functions
-    LeapC_ConnectionCallbacks.on_connection = &ultraleap_onConnect;
-    LeapC_ConnectionCallbacks.on_device_found = &ultraleap_onDevice;
-    LeapC_ConnectionCallbacks.on_tracking_mode = &ultraleap_onTrackingMode;
-
-    // initialize the last frame ID
-    x->x_lastFrameID = 0;
     // open a connection and keep a handle for it
     x->x_leapConnection = LeapC_OpenConnection();
     LeapC_SetTrackingMode (eLeapTrackingMode_Desktop);
     result = LeapGetVersion (*(x->x_leapConnection), eLeapVersionPart_ClientLibrary, &leapVersion);
 
+    // set up callback Functions
+    LeapC_ConnectionCallbacks.on_connection = &ultraleap_onConnect;
+    LeapC_ConnectionCallbacks.on_device_found = &ultraleap_onDevice;
+    LeapC_ConnectionCallbacks.on_tracking_mode = &ultraleap_onTrackingMode;
+
+    // initialize the last frame ID, time stamp reference, and frame
+    x->x_lastFrameID = 0;
+    x->x_timeStampReference = 0;
+    x->x_leapFrame = NULL;
+
+    // initialize flags
     x->x_generalFlag = 1.0;
 
     x->x_handTypeFlag = 0.0;
@@ -36,6 +38,8 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
     x->x_handPinchStrengthFlag = 0.0;
     x->x_handPinchDistanceFlag = 0.0;
 
+    x->x_armCenterFlag = 0.0;
+    x->x_armDirectionFlag = 0.0;
     x->x_armWristPositionFlag = 0.0;
     x->x_armElbowPositionFlag = 0.0;
     x->x_armWidthFlag = 0.0;
@@ -91,6 +95,14 @@ void ultraleap_setup (void)
         ultraleap_class,
         (t_method) ultraleapInfo,
         gensym ("info"),
+        A_NULL
+    );
+
+    // reset time stamp reference point
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapResetTimeStamp,
+        gensym ("timestamp_reset"),
         A_NULL
     );
 
@@ -179,6 +191,22 @@ void ultraleap_setup (void)
     );
 
     // arm
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetArmCenterFlag,
+        gensym ("arm_center"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetArmDirectionFlag,
+        gensym ("arm_direction"),
+        A_DEFFLOAT,
+        A_NULL
+    );
+
     class_addmethod (
         ultraleap_class,
         (t_method) ultraleapSetArmWristPositionFlag,
@@ -313,12 +341,21 @@ static t_float ultraleapGetVectorMagnitude (LEAP_VECTOR v)
 
 static t_float ultraleapGetEuclideanDistance (LEAP_VECTOR a, LEAP_VECTOR b)
 {
-    t_float diffX = a.x - b.x;
-    t_float diffY = a.y - b.y;
-    t_float diffZ = a.z - b.z;
-    t_float dist = sqrt ((diffX * diffX) + (diffY * diffY) + (diffZ * diffZ));
+    LEAP_VECTOR diff = ultraleapGetVectorDiff (a, b);
+    t_float dist = sqrt ((diff.x * diff.x) + (diff.y * diff.y) + (diff.z * diff.z));
 
     return dist;
+}
+
+static LEAP_VECTOR ultraleapGetVectorDiff (LEAP_VECTOR a, LEAP_VECTOR b)
+{
+    LEAP_VECTOR diff;
+
+    diff.x = a.x - b.x;
+    diff.y = a.y - b.y;
+    diff.z = a.z - b.z;
+
+    return diff;
 }
 
 static LEAP_VECTOR ultraleapGetVectorCentroid (LEAP_VECTOR a, LEAP_VECTOR b)
@@ -447,6 +484,22 @@ static void ultraleapSetHandPinchDistanceFlag (t_ultraleap* x, t_float state)
 }
 
 // set methods: arms
+static void ultraleapSetArmCenterFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_armCenterFlag = state;
+}
+
+static void ultraleapSetArmDirectionFlag (t_ultraleap* x, t_float state)
+{
+    state = (state < 0.0) ? 0.0 : state;
+    state = (state > 1.0) ? 1.0 : state;
+
+    x->x_armDirectionFlag = state;
+}
+
 static void ultraleapSetArmWristPositionFlag (t_ultraleap* x, t_float state)
 {
     state = (state < 0.0) ? 0.0 : state;
@@ -587,6 +640,8 @@ static void ultraleapInfo (t_ultraleap* x)
     post ("pinch_strength: %1.0f", x->x_handPinchStrengthFlag);
     post ("pinch_distance: %1.0f\n", x->x_handPinchDistanceFlag);
 
+    post ("arm_center: %1.0f", x->x_armCenterFlag);
+    post ("arm_direction: %1.0f", x->x_armDirectionFlag);
     post ("wrist_position: %1.0f", x->x_armWristPositionFlag);
     post ("elbow_position: %1.0f", x->x_armElbowPositionFlag);
     post ("arm_width: %1.0f\n", x->x_armWidthFlag);
@@ -613,34 +668,37 @@ static void ultraleapInfo (t_ultraleap* x)
     LeapC_GetTrackingMode();
 }
 
+// reset the time stamp
+static void ultraleapResetTimeStamp (t_ultraleap* x)
+{
+    x->x_timeStampReference = x->x_leapFrame->info.timestamp;
+}
+
 // poll method
 static void ultraleapPoll (t_ultraleap* x)
 {
     uint32_t nHands;
-    LEAP_TRACKING_EVENT* frame = LeapC_GetFrame();
+    x->x_leapFrame = LeapC_GetFrame();
 
-    if (frame && (frame->tracking_frame_id > x->x_lastFrameID))
+    if (x->x_leapFrame && (x->x_leapFrame->tracking_frame_id > x->x_lastFrameID))
     {
-        x->x_lastFrameID = frame->tracking_frame_id;
-        nHands = frame->nHands;
+        x->x_lastFrameID = x->x_leapFrame->tracking_frame_id;
+        nHands = x->x_leapFrame->nHands;
 
         if (nHands > 0)
-        {
-            ultraleapProcessArms (x, frame);
-            ultraleapProcessHands (x, frame);
-        }
+            ultraleapProcessHands (x);
 
         if (x->x_generalFlag)
-            ultraleapProcessGeneral (x, frame);
+            ultraleapProcessGeneral (x);
     }
 }
 
 // process hand data
-static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
+static void ultraleapProcessHands (t_ultraleap* x)
 {
-    LEAP_HAND* handList = frame->pHands;
+    LEAP_HAND* handList = x->x_leapFrame->pHands;
 
-    for (uint32_t handIdx = 0; handIdx < frame->nHands; handIdx++)
+    for (uint32_t handIdx = 0; handIdx < x->x_leapFrame->nHands; handIdx++)
     {
         int numHandInfoAtoms = 6;
         t_atom handInfo[numHandInfoAtoms];
@@ -649,6 +707,8 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         LEAP_HAND hand = handList[handIdx];
         // get a pointer to the array of digits
         LEAP_DIGIT* fingerList = &hand.digits[0];
+
+        ultraleapProcessArms (x);
 
         // set first atom to handIdx since all output lists will begin with that
         SETFLOAT (&handInfo[0], handIdx);
@@ -813,11 +873,11 @@ static void ultraleapProcessHands (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
 }
 
 // process arm per hand
-static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
+static void ultraleapProcessArms (t_ultraleap* x)
 {
-    LEAP_HAND* handList = frame->pHands;
+    LEAP_HAND* handList = x->x_leapFrame->pHands;
 
-    for (uint32_t handIdx = 0; handIdx < frame->nHands; handIdx++)
+    for (uint32_t handIdx = 0; handIdx < x->x_leapFrame->nHands; handIdx++)
     {
         int numArmInfoAtoms = 6;
         t_atom armInfo[numArmInfoAtoms];
@@ -828,23 +888,36 @@ static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         // set first atom to handIdx since all output lists will begin with that
         SETFLOAT (&armInfo[0], handIdx);
 
-        // TODO: make arm direction flag
-        LEAP_VECTOR diffVec;
+        if (x->x_armCenterFlag)
+        {
+            // based on LeapImplementationC++.h line 159, we can get the center of a bone by taking the arithmetic mean of the next_joint and prev_joint coordinates
+            LEAP_VECTOR centroid = ultraleapGetVectorCentroid (hand.arm.next_joint, hand.arm.prev_joint);
 
-        // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. it also needs to be normalized.
-        diffVec.x = hand.arm.next_joint.x - hand.arm.prev_joint.x;
-        diffVec.y = hand.arm.next_joint.y - hand.arm.prev_joint.y;
-        diffVec.z = hand.arm.next_joint.z - hand.arm.prev_joint.z;
+            SETSYMBOL (&armInfo[1], gensym ("arm"));
+            SETSYMBOL (&armInfo[2], gensym ("center"));
+            SETFLOAT (&armInfo[3], centroid.x);
+            SETFLOAT (&armInfo[4], centroid.y);
+            SETFLOAT (&armInfo[5], centroid.z);
 
-        diffVec = ultraleapNormalizeVector (diffVec);
+            outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
+        }
 
-        SETSYMBOL (&armInfo[1], gensym ("arm"));
-        SETSYMBOL (&armInfo[2], gensym ("direction"));
-        SETFLOAT (&armInfo[3], diffVec.x);
-        SETFLOAT (&armInfo[4], diffVec.y);
-        SETFLOAT (&armInfo[5], diffVec.z);
+        if (x->x_armDirectionFlag)
+        {
+            LEAP_VECTOR diffVec;
 
-        outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
+            // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. it also needs to be normalized.
+            diffVec = ultraleapGetVectorDiff (hand.arm.next_joint, hand.arm.prev_joint);
+            diffVec = ultraleapNormalizeVector (diffVec);
+
+            SETSYMBOL (&armInfo[1], gensym ("arm"));
+            SETSYMBOL (&armInfo[2], gensym ("direction"));
+            SETFLOAT (&armInfo[3], diffVec.x);
+            SETFLOAT (&armInfo[4], diffVec.y);
+            SETFLOAT (&armInfo[5], diffVec.z);
+
+            outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
+        }
 
         if (x->x_armWristPositionFlag)
         {
@@ -867,18 +940,6 @@ static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
 
             outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
         }
-
-        // TODO: make arm center flag
-        // based on LeapImplementationC++.h line 159, we can get the center of a bone by taking the arithmetic mean of the next_joint and prev_joint coordinates
-        LEAP_VECTOR centroid = ultraleapGetVectorCentroid (hand.arm.next_joint, hand.arm.prev_joint);
-
-        SETSYMBOL (&armInfo[1], gensym ("arm"));
-        SETSYMBOL (&armInfo[2], gensym ("center"));
-        SETFLOAT (&armInfo[3], centroid.x);
-        SETFLOAT (&armInfo[4], centroid.y);
-        SETFLOAT (&armInfo[5], centroid.z);
-
-        outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
 
         if (x->x_armWidthFlag)
         {
@@ -1022,15 +1083,15 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
 }
 
 // process general data
-static void ultraleapProcessGeneral (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
+static void ultraleapProcessGeneral (t_ultraleap* x)
 {
     int numGeneralInfoAtoms = 4;
     t_atom generalInfo[numGeneralInfoAtoms];
 
-    SETFLOAT (&generalInfo[0], (t_float) frame->tracking_frame_id);
-    SETFLOAT (&generalInfo[1], (t_float) (frame->info.timestamp / (t_float) 1000000));
-    SETFLOAT (&generalInfo[2], (t_float) frame->framerate);
-    SETFLOAT (&generalInfo[3], (t_float) frame->nHands);
+    SETFLOAT (&generalInfo[0], (t_float) x->x_leapFrame->tracking_frame_id);
+    SETFLOAT (&generalInfo[1], (t_float) ((x->x_leapFrame->info.timestamp - x->x_timeStampReference) / (t_float) 1000000));
+    SETFLOAT (&generalInfo[2], (t_float) x->x_leapFrame->framerate);
+    SETFLOAT (&generalInfo[3], (t_float) x->x_leapFrame->nHands);
 
     outlet_list (x->x_outletGeneral, 0, numGeneralInfoAtoms, &generalInfo[0]);
 }
