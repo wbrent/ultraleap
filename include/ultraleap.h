@@ -18,6 +18,7 @@ typedef struct _ultraleap
 
     LEAP_CONNECTION* x_leapConnection;
     LEAP_TRACKING_EVENT* x_leapFrame;
+    LEAP_VECTOR x_fingerVecs[NUM_FINGERS];
     int64_t x_lastFrameID;
     int64_t x_timeStampReference;
 

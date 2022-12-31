@@ -27,6 +27,14 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv)
     x->x_timeStampReference = 0;
     x->x_leapFrame = NULL;
 
+    // initialize the previous frame fingertip vectors
+    for (int f = 0; f < NUM_FINGERS; f++)
+    {
+        x->x_fingerVecs[f].x = 0.0;
+        x->x_fingerVecs[f].y = 0.0;
+        x->x_fingerVecs[f].z = 0.0;
+    }
+
     // initialize flags
     x->x_generalFlag = 1.0;
 
@@ -968,7 +976,6 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
 
         SETFLOAT (&fingerInfo[0], handIdx);
 
-        // type
         if (x->x_fingerTypeFlag)
         {
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
@@ -1001,7 +1008,6 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
             outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 2, fingerInfo);
         }
 
-        // direction
         if (x->x_fingerDirectionFlag)
         {
             LEAP_VECTOR diffVec;
@@ -1033,22 +1039,25 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
             outlet_list (x->x_outletHands, 0, numFingerInfoAtoms, fingerInfo);
         }
 
-        // TODO: since there's no finger velocity in LeapC, need to store the coordinate of each finger on the previous frame and get the difference.
-/*
         if (x->x_fingerVelocityFlag)
         {
-            SETFLOAT (&fingerInfo[0], handIdx);
-            SETSYMBOL (&fingerInfo[1], gensym ("finger"));
-            SETFLOAT (&fingerInfo[2], finger.type());
-            SETSYMBOL (&fingerInfo[3], gensym ("velocity"));
-            SETFLOAT (&fingerInfo[4], finger.tipVelocity().x);
-            SETFLOAT (&fingerInfo[5], finger.tipVelocity().y);
-            SETFLOAT (&fingerInfo[6], finger.tipVelocity().z);
+            LEAP_VECTOR diffVec = ultraleapGetVectorDiff (distalBone.next_joint, x->x_fingerVecs[finger.finger_id]);
 
-            outlet_anything (x->x_outletHands, gensym ("hand"), numFingerInfoAtoms, fingerInfo);
+            SETSYMBOL (&fingerInfo[1], gensym ("finger"));
+            SETFLOAT (&fingerInfo[2], finger.finger_id);
+            SETSYMBOL (&fingerInfo[3], gensym ("velocity"));
+            SETFLOAT (&fingerInfo[4], diffVec.x);
+            SETFLOAT (&fingerInfo[5], diffVec.y);
+            SETFLOAT (&fingerInfo[6], diffVec.z);
+
+            outlet_list (x->x_outletHands, 0, numFingerInfoAtoms, fingerInfo);
+
+            // save these coordinates for next time
+            x->x_fingerVecs[finger.finger_id].x = distalBone.next_joint.x;
+            x->x_fingerVecs[finger.finger_id].y = distalBone.next_joint.y;
+            x->x_fingerVecs[finger.finger_id].z = distalBone.next_joint.z;
         }
-*/
-        // size
+
         if (x->x_fingerSizeFlag)
         {
             t_float width, length;
@@ -1072,7 +1081,6 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
             outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 1, fingerInfo);
         }
 
-        // is extended
         if (x->x_fingerIsExtendedFlag)
         {
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
