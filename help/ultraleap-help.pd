@@ -153,7 +153,7 @@
 #X obj 19 359 r \$0-ultraleap;
 #X text 62 398 poll device;
 #X text 196 496 output from the object is easily parsed using [route] objects \, as demonstrated sub-patches and abstractions presented here., f 48;
-#N canvas 702 63 1101 553 hand-data 0;
+#N canvas 702 63 1101 553 hand-data 1;
 #X obj 558 39 hand 1;
 #X obj 18 39 hand 0;
 #X restore 299 189 pd hand-data;

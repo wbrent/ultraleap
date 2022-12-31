@@ -301,6 +301,49 @@ void ultraleap_setup (void)
 }
 
 
+// utility functions
+static t_float ultraleapGetVectorMagnitude (LEAP_VECTOR v)
+{
+    t_float mag = 0.0;
+    mag = sqrt ((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
+    return mag;
+}
+
+static t_float ultraleapGetEuclideanDistance (LEAP_VECTOR a, LEAP_VECTOR b)
+{
+    t_float diffX = a.x - b.x;
+    t_float diffY = a.y - b.y;
+    t_float diffZ = a.z - b.z;
+    t_float dist = sqrt ((diffX * diffX) + (diffY * diffY) + (diffZ * diffZ));
+
+    return dist;
+}
+
+static LEAP_VECTOR ultraleapNormalizeVector (LEAP_VECTOR v)
+{
+    LEAP_VECTOR normVec = v;
+    t_float mag = ultraleapGetVectorMagnitude (v);
+    t_float denom;
+
+    if (mag <= EPSILON)
+    {
+        normVec.x = 0.0;
+        normVec.y = 0.0;
+        normVec.z = 0.0;
+
+        return normVec;
+    }
+
+    denom = 1.0f / mag;
+
+    normVec.x *= denom;
+    normVec.y *= denom;
+    normVec.z *= denom;
+
+    return normVec;
+}
+
+
 // set methods: tracking mode
 static void ultraleapSetTrackingMode (t_ultraleap* x, t_symbol* m)
 {
@@ -769,6 +812,16 @@ static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         // set first atom to handIdx since all output lists will begin with that
         SETFLOAT (&armInfo[0], handIdx);
 
+        // TODO: make arm direction flag
+        SETSYMBOL (&armInfo[1], gensym ("arm"));
+        SETSYMBOL (&armInfo[2], gensym ("direction"));
+        // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. but it also needs to be normalized
+        SETFLOAT (&armInfo[3], hand.arm.next_joint.x - hand.arm.prev_joint.x);
+        SETFLOAT (&armInfo[4], hand.arm.next_joint.y - hand.arm.prev_joint.y);
+        SETFLOAT (&armInfo[5], hand.arm.next_joint.z - hand.arm.prev_joint.z);
+
+        outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
+
         if (x->x_armWristPositionFlag)
         {
             SETSYMBOL (&armInfo[1], gensym ("arm"));
@@ -791,6 +844,16 @@ static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
             outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
         }
 
+        // TODO: make arm center flag
+        SETSYMBOL (&armInfo[1], gensym ("arm"));
+        SETSYMBOL (&armInfo[2], gensym ("center"));
+        // based on LeapImplementationC++.h line 159, we can get the center of a bone by taking the arithmetic mean of the next_joint and prev_joint coordinates
+        SETFLOAT (&armInfo[3], (hand.arm.next_joint.x + hand.arm.prev_joint.x) * 0.5);
+        SETFLOAT (&armInfo[4], (hand.arm.next_joint.y + hand.arm.prev_joint.y) * 0.5);
+        SETFLOAT (&armInfo[5], (hand.arm.next_joint.z + hand.arm.prev_joint.z) * 0.5);
+
+        outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
+
         if (x->x_armWidthFlag)
         {
             SETSYMBOL (&armInfo[1], gensym ("arm"));
@@ -808,6 +871,10 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
     for (int fingerIdx = 0; fingerIdx < NUM_FINGERS; fingerIdx++)
     {
         LEAP_DIGIT finger = fingerList[fingerIdx];
+        // each finger has 4 bones. the distal bone is the tip. each bone has two joints/ends. next_joint is the end further from the body
+        LEAP_BONE proximalBone = finger.proximal;
+        LEAP_BONE distalBone = finger.distal;
+
         int numFingerInfoAtoms = 7;
         t_atom fingerInfo[numFingerInfoAtoms];
 
@@ -846,26 +913,31 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
             outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 2, fingerInfo);
         }
 
-        // TODO: how do we get the direction of a finger or bone? see the Cxx solution
-        /*
+        // direction
         if (x->x_fingerDirectionFlag)
         {
+            LEAP_VECTOR diffVec;
+
+            // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. here, we use the next_joint of the distal bone and prev_joint of the proximal bone of a finger. but it also needs to be normalized.
+            diffVec.x = distalBone.next_joint.x - proximalBone.prev_joint.x;
+            diffVec.y = distalBone.next_joint.y - proximalBone.prev_joint.y;
+            diffVec.z = distalBone.next_joint.z - proximalBone.prev_joint.z;
+
+            diffVec = ultraleapNormalizeVector (diffVec);
+
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
             SETFLOAT (&fingerInfo[2], finger.finger_id);
             SETSYMBOL (&fingerInfo[3], gensym ("direction"));
-            SETFLOAT (&fingerInfo[4], finger.direction().x);
-            SETFLOAT (&fingerInfo[5], finger.direction().y);
-            SETFLOAT (&fingerInfo[6], finger.direction().z);
 
-            outlet_anything (x->x_outletHands, gensym ("hand"), numFingerInfoAtoms, fingerInfo);
+            SETFLOAT (&fingerInfo[4], diffVec.x);
+            SETFLOAT (&fingerInfo[5], diffVec.y);
+            SETFLOAT (&fingerInfo[6], diffVec.z);
+
+            outlet_list (x->x_outletHands, 0, numFingerInfoAtoms, fingerInfo);
         }
-        */
 
         if (x->x_fingerPositionFlag)
         {
-            // each finger has 4 bones. the distal bone is the tip. each bone has two joints/ends. next_joint is the end further from the body
-            LEAP_BONE distalBone = finger.distal;
-
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
             // finger_id seems to be consistent, where thumb = 0, index = 1, middle = 2, ring = 3, and pinky = 4
             SETFLOAT (&fingerInfo[2], finger.finger_id);
@@ -892,20 +964,21 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
             outlet_anything (x->x_outletHands, gensym ("hand"), numFingerInfoAtoms, fingerInfo);
         }
 */
-        // TODO: how do we get the length of a finger? see the Cxx solution
         // size
         if (x->x_fingerSizeFlag)
         {
-            LEAP_BONE distalBone = finger.distal;
+            // based on LeapImplementationC++.h line 161, we can get the length of a bone by getting the euclidean distance betweeen next_joint and prev_joint. for a finger, we need the distance between the proximal and distal bones
+            t_float length = ultraleapGetEuclideanDistance (proximalBone.prev_joint, distalBone.next_joint);
 
+            // TODO: this seems to work, but the thumb is longer than it should be. is this related to the fact that the thumb has no metacarpal LEAP_BONE member?
             SETFLOAT (&fingerInfo[0], handIdx);
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
             SETFLOAT (&fingerInfo[2], finger.finger_id);
             SETSYMBOL (&fingerInfo[3], gensym ("size"));
             SETFLOAT (&fingerInfo[4], distalBone.width);
-            // SETFLOAT (&fingerInfo[5], distalBone.length());
+            SETFLOAT (&fingerInfo[5], length);
 
-            outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 2, fingerInfo);
+            outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 1, fingerInfo);
         }
 
         // is extended

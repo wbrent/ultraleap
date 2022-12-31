@@ -1,10 +1,13 @@
+#include <math.h>
 #include "m_pd.h"
 #include "LeapC.h"
 #include "leapConnection.h"
 
 #define PD_ULTRALEAP_VERSION "0.1.0"
 #define PD_ULTRALEAP_RELEASE_DATE "Dec 2022"
+
 #define NUM_FINGERS 5
+#define EPSILON 1.192092896e-07f
 
 static t_class* ultraleap_class;
 
@@ -53,6 +56,11 @@ typedef struct _ultraleap
 static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv);
 static void ultraleap_free (t_ultraleap* x);
 void ultraleap_setup (void);
+
+// utility functions
+static t_float ultraleapGetVectorMagnitude (LEAP_VECTOR v);
+static t_float ultraleapGetEuclideanDistance (LEAP_VECTOR a, LEAP_VECTOR b);
+static LEAP_VECTOR ultraleapNormalizeVector (LEAP_VECTOR v);
 
 // set methods: mode
 static void ultraleapSetTrackingMode (t_ultraleap* x, t_symbol* m);
