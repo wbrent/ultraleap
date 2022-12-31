@@ -101,6 +101,15 @@ void ultraleap_setup (void)
 
 
     // set methods
+    // tracking mode
+    class_addmethod (
+        ultraleap_class,
+        (t_method) ultraleapSetTrackingMode,
+        gensym ("tracking_mode"),
+        A_DEFSYMBOL,
+        A_NULL
+    );
+
     // general
     class_addmethod (
         ultraleap_class,
@@ -289,6 +298,25 @@ void ultraleap_setup (void)
         A_DEFFLOAT,
         A_NULL
     );
+}
+
+
+// set methods: tracking mode
+static void ultraleapSetTrackingMode (t_ultraleap* x, t_symbol* m)
+{
+    const char* result;
+
+    if (! strcmp (m->s_name, "desktop"))
+        result = LeapC_SetTrackingMode (eLeapTrackingMode_Desktop);
+    else if (! strcmp (m->s_name, "hmd"))
+        result = LeapC_SetTrackingMode (eLeapTrackingMode_HMD);
+    else if (! strcmp (m->s_name, "screentop"))
+        result = LeapC_SetTrackingMode (eLeapTrackingMode_ScreenTop);
+    else
+        result = "invalid";
+
+    if (strcmp (result, "eLeapRS_Success"))
+        pd_error (x, "[%s]: failed to set tracking mode. unknown mode type: %s", x->x_objSymbol->s_name, m->s_name);
 }
 
 

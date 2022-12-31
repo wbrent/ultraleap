@@ -54,6 +54,9 @@ static void* ultraleap_new (t_symbol* s, int argc, t_atom* argv);
 static void ultraleap_free (t_ultraleap* x);
 void ultraleap_setup (void);
 
+// set methods: mode
+static void ultraleapSetTrackingMode (t_ultraleap* x, t_symbol* m);
+
 // set methods: general
 static void ultraleapSetGeneralFlag (t_ultraleap* x, t_float state);
 
