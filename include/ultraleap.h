@@ -60,6 +60,7 @@ void ultraleap_setup (void);
 // utility functions
 static t_float ultraleapGetVectorMagnitude (LEAP_VECTOR v);
 static t_float ultraleapGetEuclideanDistance (LEAP_VECTOR a, LEAP_VECTOR b);
+static LEAP_VECTOR ultraleapGetVectorCentroid (LEAP_VECTOR a, LEAP_VECTOR b);
 static LEAP_VECTOR ultraleapNormalizeVector (LEAP_VECTOR v);
 
 // set methods: mode

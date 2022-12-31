@@ -319,6 +319,20 @@ static t_float ultraleapGetEuclideanDistance (LEAP_VECTOR a, LEAP_VECTOR b)
     return dist;
 }
 
+static LEAP_VECTOR ultraleapGetVectorCentroid (LEAP_VECTOR a, LEAP_VECTOR b)
+{
+    t_float meanX = (a.x + b.x) * 0.5;
+    t_float meanY = (a.y + b.y) * 0.5;
+    t_float meanZ = (a.z + b.z) * 0.5;
+    LEAP_VECTOR centroid;
+
+    centroid.x = meanX;
+    centroid.y = meanY;
+    centroid.z = meanZ;
+
+    return centroid;
+}
+
 static LEAP_VECTOR ultraleapNormalizeVector (LEAP_VECTOR v)
 {
     LEAP_VECTOR normVec = v;
@@ -813,12 +827,20 @@ static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         SETFLOAT (&armInfo[0], handIdx);
 
         // TODO: make arm direction flag
+        LEAP_VECTOR diffVec;
+
+        // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. it also needs to be normalized.
+        diffVec.x = hand.arm.next_joint.x - hand.arm.prev_joint.x;
+        diffVec.y = hand.arm.next_joint.y - hand.arm.prev_joint.y;
+        diffVec.z = hand.arm.next_joint.z - hand.arm.prev_joint.z;
+
+        diffVec = ultraleapNormalizeVector (diffVec);
+
         SETSYMBOL (&armInfo[1], gensym ("arm"));
         SETSYMBOL (&armInfo[2], gensym ("direction"));
-        // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. but it also needs to be normalized
-        SETFLOAT (&armInfo[3], hand.arm.next_joint.x - hand.arm.prev_joint.x);
-        SETFLOAT (&armInfo[4], hand.arm.next_joint.y - hand.arm.prev_joint.y);
-        SETFLOAT (&armInfo[5], hand.arm.next_joint.z - hand.arm.prev_joint.z);
+        SETFLOAT (&armInfo[3], diffVec.x);
+        SETFLOAT (&armInfo[4], diffVec.y);
+        SETFLOAT (&armInfo[5], diffVec.z);
 
         outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
 
@@ -845,12 +867,14 @@ static void ultraleapProcessArms (t_ultraleap* x, LEAP_TRACKING_EVENT* frame)
         }
 
         // TODO: make arm center flag
+        // based on LeapImplementationC++.h line 159, we can get the center of a bone by taking the arithmetic mean of the next_joint and prev_joint coordinates
+        LEAP_VECTOR centroid = ultraleapGetVectorCentroid (hand.arm.next_joint, hand.arm.prev_joint);
+
         SETSYMBOL (&armInfo[1], gensym ("arm"));
         SETSYMBOL (&armInfo[2], gensym ("center"));
-        // based on LeapImplementationC++.h line 159, we can get the center of a bone by taking the arithmetic mean of the next_joint and prev_joint coordinates
-        SETFLOAT (&armInfo[3], (hand.arm.next_joint.x + hand.arm.prev_joint.x) * 0.5);
-        SETFLOAT (&armInfo[4], (hand.arm.next_joint.y + hand.arm.prev_joint.y) * 0.5);
-        SETFLOAT (&armInfo[5], (hand.arm.next_joint.z + hand.arm.prev_joint.z) * 0.5);
+        SETFLOAT (&armInfo[3], centroid.x);
+        SETFLOAT (&armInfo[4], centroid.y);
+        SETFLOAT (&armInfo[5], centroid.z);
 
         outlet_list (x->x_outletHands, 0, numArmInfoAtoms, armInfo);
 
@@ -918,7 +942,7 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
         {
             LEAP_VECTOR diffVec;
 
-            // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. here, we use the next_joint of the distal bone and prev_joint of the proximal bone of a finger. but it also needs to be normalized.
+            // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. here, we use the next_joint of the distal bone and prev_joint of the proximal bone of a finger. it also needs to be normalized.
             diffVec.x = distalBone.next_joint.x - proximalBone.prev_joint.x;
             diffVec.y = distalBone.next_joint.y - proximalBone.prev_joint.y;
             diffVec.z = distalBone.next_joint.z - proximalBone.prev_joint.z;
@@ -949,7 +973,7 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
             outlet_list (x->x_outletHands, 0, numFingerInfoAtoms, fingerInfo);
         }
 
-        // TODO: how do we get the velocity of a finger or bone? see the Cxx solution
+        // TODO: since there's no finger velocity in LeapC, need to store the coordinate of each finger on the previous frame and get the difference.
 /*
         if (x->x_fingerVelocityFlag)
         {
