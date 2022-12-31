@@ -960,6 +960,7 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
         LEAP_DIGIT finger = fingerList[fingerIdx];
         // each finger has 4 bones. the distal bone is the tip. each bone has two joints/ends. next_joint is the end further from the body
         LEAP_BONE proximalBone = finger.proximal;
+        LEAP_BONE intermediateBone = finger.intermediate;
         LEAP_BONE distalBone = finger.distal;
 
         int numFingerInfoAtoms = 7;
@@ -1005,11 +1006,8 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
         {
             LEAP_VECTOR diffVec;
 
-            // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. here, we use the next_joint of the distal bone and prev_joint of the proximal bone of a finger. it also needs to be normalized.
-            diffVec.x = distalBone.next_joint.x - proximalBone.prev_joint.x;
-            diffVec.y = distalBone.next_joint.y - proximalBone.prev_joint.y;
-            diffVec.z = distalBone.next_joint.z - proximalBone.prev_joint.z;
-
+            // based on LeapImplementationC++.h line 160, we can get the direction of a bone by getting the difference betweeen next_joint and prev_joint in each dimension. here, we use the next_joint and prev_joint of the distal bone to get the direction of the fingertip. it also needs to be normalized.
+            diffVec = ultraleapGetVectorDiff (distalBone.next_joint, distalBone.prev_joint);
             diffVec = ultraleapNormalizeVector (diffVec);
 
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
@@ -1026,7 +1024,6 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
         if (x->x_fingerPositionFlag)
         {
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
-            // finger_id seems to be consistent, where thumb = 0, index = 1, middle = 2, ring = 3, and pinky = 4
             SETFLOAT (&fingerInfo[2], finger.finger_id);
             SETSYMBOL (&fingerInfo[3], gensym ("position"));
             SETFLOAT (&fingerInfo[4], distalBone.next_joint.x);
@@ -1054,15 +1051,22 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
         // size
         if (x->x_fingerSizeFlag)
         {
+            t_float width, length;
             // based on LeapImplementationC++.h line 161, we can get the length of a bone by getting the euclidean distance betweeen next_joint and prev_joint. for a finger, we need the distance between the proximal and distal bones
-            t_float length = ultraleapGetEuclideanDistance (proximalBone.prev_joint, distalBone.next_joint);
+            // note, must special-case the thumb. per LeapC.h line 1408, the thumb is not represented in anatomically correct terms and therefore needs length between the distal an intermediate bones
+            if (finger.finger_id > 0)
+                length = ultraleapGetEuclideanDistance (proximalBone.prev_joint, distalBone.next_joint);
+            else
+                length = ultraleapGetEuclideanDistance (intermediateBone.prev_joint, distalBone.next_joint);
 
-            // TODO: this seems to work, but the thumb is longer than it should be. is this related to the fact that the thumb has no metacarpal LEAP_BONE member?
+            // calculate width as the average width of the 3 bones past the palm
+            width = (proximalBone.width + intermediateBone.width + distalBone.width) * 0.333333;
+
             SETFLOAT (&fingerInfo[0], handIdx);
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
             SETFLOAT (&fingerInfo[2], finger.finger_id);
             SETSYMBOL (&fingerInfo[3], gensym ("size"));
-            SETFLOAT (&fingerInfo[4], distalBone.width);
+            SETFLOAT (&fingerInfo[4], width);
             SETFLOAT (&fingerInfo[5], length);
 
             outlet_list (x->x_outletHands, 0, numFingerInfoAtoms - 1, fingerInfo);
@@ -1072,7 +1076,6 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
         if (x->x_fingerIsExtendedFlag)
         {
             SETSYMBOL (&fingerInfo[1], gensym ("finger"));
-            // finger_id seems to be consistent, where thumb = 0, index = 1, middle = 2, ring = 3, and pinky = 4
             SETFLOAT (&fingerInfo[2], finger.finger_id);
             SETSYMBOL (&fingerInfo[3], gensym ("is_extended"));
             SETFLOAT (&fingerInfo[4], finger.is_extended);
