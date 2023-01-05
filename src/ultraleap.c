@@ -708,7 +708,7 @@ static void ultraleapProcessHands (t_ultraleap* x)
 
     for (uint32_t handIdx = 0; handIdx < x->x_leapFrame->nHands; handIdx++)
     {
-        int numHandInfoAtoms = 6;
+        const int numHandInfoAtoms = 6;
         t_atom handInfo[numHandInfoAtoms];
 
         // get this particular hand
@@ -887,7 +887,7 @@ static void ultraleapProcessArms (t_ultraleap* x)
 
     for (uint32_t handIdx = 0; handIdx < x->x_leapFrame->nHands; handIdx++)
     {
-        int numArmInfoAtoms = 6;
+        const int numArmInfoAtoms = 6;
         t_atom armInfo[numArmInfoAtoms];
 
         // get this particular hand
@@ -971,7 +971,7 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
         LEAP_BONE intermediateBone = finger.intermediate;
         LEAP_BONE distalBone = finger.distal;
 
-        int numFingerInfoAtoms = 7;
+        const int numFingerInfoAtoms = 7;
         t_atom fingerInfo[numFingerInfoAtoms];
 
         SETFLOAT (&fingerInfo[0], handIdx);
@@ -1096,7 +1096,7 @@ static void ultraleapProcessFingers (t_ultraleap* x, int handIdx, LEAP_DIGIT* fi
 // process general data
 static void ultraleapProcessGeneral (t_ultraleap* x)
 {
-    int numGeneralInfoAtoms = 4;
+    const int numGeneralInfoAtoms = 4;
     t_atom generalInfo[numGeneralInfoAtoms];
 
     SETFLOAT (&generalInfo[0], (t_float) x->x_leapFrame->tracking_frame_id);
