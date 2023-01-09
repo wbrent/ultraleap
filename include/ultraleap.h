@@ -3,8 +3,8 @@
 #include "LeapC.h"
 #include "leapConnection.h"
 
-#define PD_ULTRALEAP_VERSION "0.1.0"
-#define PD_ULTRALEAP_RELEASE_DATE "Dec 2022"
+#define PD_ULTRALEAP_VERSION "0.1.1"
+#define PD_ULTRALEAP_RELEASE_DATE "Jan 2023"
 
 #define NUM_FINGERS 5
 #define EPSILON 1.192092896e-07f
