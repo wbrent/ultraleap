@@ -699,6 +699,8 @@ static void ultraleapPoll (t_ultraleap* x)
         if (x->x_generalFlag)
             ultraleapProcessGeneral (x);
     }
+    else
+        pd_error(x, "[%s]: No Leap Motion Controller connected!", x->x_objSymbol->s_name);
 }
 
 // process hand data
@@ -1113,7 +1115,7 @@ static void ultraleapProcessGeneral (t_ultraleap* x)
 // callback for when the connection opens
 static void ultraleap_onConnect (void)
 {
-    post ("Leap Controller: Connected");
+    post ("Leap Motion Service: Connected");
 }
 
 // callback for when device is found
