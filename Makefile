@@ -5,7 +5,7 @@ lib.name = ultraleap
 # this project is built using the LeapC API (SDK 5.7.2 or higher), and requires the same version of LeapC.so (Linux) or LeapC.dll (Windows)
 
 # specify the location of the LeapSDK directory
-leapSDKdir = /c/Program\ Files/Ultraleap/LeapSDK
+leapSDKdir = /Applications/Ultraleap\ Hand\ Tracking.app/Contents/LeapSDK
 # leapSDKdir = "C:\Program Files\Ultraleap\LeapSDK"
 
 define forLinux
@@ -20,7 +20,7 @@ endef
 # in case of future macOS support
 define forDarwin
   # specify the location and name of the LEAP library
-	ldflags = -L$(leapSDKdir)/lib
+	ldflags = -L$(leapSDKdir)/lib -rpath $(leapSDKdir)/lib
   ldlibs = -lLeapC
 
   # specify include directory with the LEAP headers
